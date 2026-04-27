@@ -1,0 +1,26 @@
+# SQL-Benchmark Requirements
+# 
+# This project primarily uses Python standard library modules.
+# Optional dependencies are included for external database support.
+
+# Core dependencies (Python standard library - no installation needed)
+# - os, time, json, re, csv, concurrent.futures
+# - pathlib, urllib.request, urllib.error
+# - sqlite3, typing, statistics, collections, argparse
+
+# Optional dependencies for external database connections
+# Uncomment these lines if you want to connect to PostgreSQL or MySQL databases
+
+# PostgreSQL support
+# psycopg2-binary>=2.9.0
+
+# MySQL support  
+# mysql-connector-python>=8.0.0
+
+# Development and testing dependencies (optional)
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+
+# Documentation (optional)
+# sphinx>=5.0.0
+# sphinx-rtd-theme>=1.0.0

@@ -1,0 +1,418 @@
+question_id,db_id,difficulty,question,evidence,gold_sql,predicted_sql,execution_match,exact_match,f1,precision,recall,gold_row_count,pred_row_count,gold_error,pred_error,agent_error,latency_ms,input_tokens,output_tokens,cost_usd,provider,model_name,hints_used
+1,california_schools,moderate,Please list the lowest three eligible free rates for students aged 5-17 in continuation schools.,Eligible free rates for students aged 5-17 = `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)`,SELECT `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` FROM frpm WHERE `Educational Option Type` = 'Continuation School' AND `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` IS NOT NULL ORDER BY `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` ASC LIMIT 3,"SELECT ""School Name"", (""Free Meal Count (Ages 5-17)"" / ""Enrollment (Ages 5-17)"") AS eligible_free_rate
+FROM frpm
+WHERE ""Educational Option Type"" LIKE '%Continuation%'
+AND ""Enrollment (Ages 5-17)"" > 0
+AND (""Low Grade"" <= '17' OR ""High Grade"" >= '5')
+ORDER BY eligible_free_rate ASC
+LIMIT 3;",False,False,0.2222,0.1667,0.3333,3,3,,,,7780.0,66,88,0.001518,XAI,grok-4-1-fast-non-reasoning,True
+2,california_schools,simple,Please list the zip code of all the charter schools in Fresno County Office of Education.,Charter schools refers to `Charter School (Y/N)` = 1 in the table fprm,SELECT T2.Zip FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`District Name` = 'Fresno County Office of Education' AND T1.`Charter School (Y/N)` = 1,"SELECT DISTINCT s.""Zip""
+FROM frpm f
+JOIN schools s ON f.""CDSCode"" = s.""CDSCode""
+WHERE f.""Charter School (Y/N)"" = 1
+AND f.""County Name"" = 'Fresno County Office of Education';",False,False,0.0,0.0,0.0,5,0,,,,4930.0,60,56,0.00102,XAI,grok-4-1-fast-non-reasoning,True
+0,california_schools,simple,What is the highest eligible free rate for K-12 students in the schools in Alameda County?,Eligible free rate for K-12 = `Free Meal Count (K-12)` / `Enrollment (K-12)`,SELECT `Free Meal Count (K-12)` / `Enrollment (K-12)` FROM frpm WHERE `County Name` = 'Alameda' ORDER BY (CAST(`Free Meal Count (K-12)` AS REAL) / `Enrollment (K-12)`) DESC LIMIT 1,"SELECT MAX(""Free Meal Count (K-12)"" / ""Enrollment (K-12)"") AS highest_eligible_free_rate FROM frpm f JOIN schools s ON f.""CDSCode"" = s.""CDSCode"" WHERE s.""County"" = 'Alameda' AND f.""Enrollment (K-12)"" > 0;",True,False,1.0,1.0,1.0,1,1,,,,5750.0,60,58,0.00105,XAI,grok-4-1-fast-non-reasoning,True
+3,california_schools,simple,What is the unabbreviated mailing street address of the school with the highest FRPM count for K-12 students?,,SELECT T2.MailStreet FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode ORDER BY T1.`FRPM Count (K-12)` DESC LIMIT 1,"SELECT ""MailStreet"" FROM schools s JOIN frpm f ON s.""CDSCode"" = f.""CDSCode"" WHERE ""FRPM Count (K-12)"" = (SELECT MAX(""FRPM Count (K-12)"") FROM frpm)",True,False,1.0,1.0,1.0,1,1,,,,4990.0,36,46,0.000798,XAI,grok-4-1-fast-non-reasoning,False
+4,california_schools,moderate,Please list the phone numbers of the direct charter-funded schools that are opened after 2000/1/1.,Charter schools refers to `Charter School (Y/N)` = 1 in the frpm,SELECT T2.Phone FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`Charter Funding Type` = 'Directly funded' AND T1.`Charter School (Y/N)` = 1 AND T2.OpenDate > '2000-01-01',"SELECT s.""Phone""
+FROM schools s
+JOIN frpm f ON s.""CDSCode"" = f.""CDSCode""
+WHERE f.""Charter School (Y/N)"" = 1
+AND s.""FundingType"" = 'Direct Funded'
+AND s.""OpenDate"" > '2000-01-01';",False,False,0.0,0.0,0.0,751,0,,,,5940.0,56,54,0.000978,XAI,grok-4-1-fast-non-reasoning,True
+5,california_schools,simple,How many schools with an average score in Math greater than 400 in the SAT test are exclusively virtual?,Exclusively virtual refers to Virtual = 'F',SELECT COUNT(DISTINCT T2.School) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.Virtual = 'F' AND T1.AvgScrMath > 400,"SELECT COUNT(DISTINCT s.CDSCode)
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE s.Virtual = 'F'
+AND sat.""AvgScrMath"" > 400;",True,False,1.0,1.0,1.0,1,1,,,,4540.0,54,42,0.000792,XAI,grok-4-1-fast-non-reasoning,True
+6,california_schools,simple,"Among the schools with the SAT test takers of over 500, please list the schools that are magnet schools or offer a magnet program.",Magnet schools or offer a magnet program means that Magnet = 1,SELECT T2.School FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.Magnet = 1 AND T1.NumTstTakr > 500,"SELECT s.School
+FROM schools s
+JOIN satscores sat ON s.CDSCode = sat.cds
+WHERE sat.NumTstTakr > 500 AND s.Magnet = 1;",True,False,1.0,1.0,1.0,3,3,,,,5930.0,74,40,0.000822,XAI,grok-4-1-fast-non-reasoning,True
+7,california_schools,simple,What is the phone number of the school that has the highest number of test takers with an SAT score of over 1500?,,SELECT T2.Phone FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.NumGE1500 DESC LIMIT 1,"SELECT Phone FROM schools s
+WHERE s.""CDSCode"" = (
+    SELECT cds FROM satscores
+    WHERE ""NumGE1500"" IS NOT NULL
+    ORDER BY ""NumGE1500"" DESC
+    LIMIT 1
+);",True,False,1.0,1.0,1.0,1,1,,,,5080.0,46,50,0.000888,XAI,grok-4-1-fast-non-reasoning,False
+8,california_schools,simple,What is the number of SAT test takers of the schools with the highest FRPM count for K-12 students?,,SELECT NumTstTakr FROM satscores WHERE cds = ( SELECT CDSCode FROM frpm ORDER BY `FRPM Count (K-12)` DESC LIMIT 1 ),"SELECT SUM(s.NumTstTakr) FROM satscores s 
+WHERE s.cds IN (
+    SELECT f.CDSCode FROM frpm f 
+    WHERE f.""FRPM Count (K-12)"" = (
+        SELECT MAX(""FRPM Count (K-12)"") FROM frpm 
+        WHERE ""FRPM Count (K-12)"" IS NOT NULL
+    )
+);",True,False,1.0,1.0,1.0,1,1,,,,6300.0,38,70,0.001164,XAI,grok-4-1-fast-non-reasoning,False
+9,california_schools,simple,"Among the schools with the average score in Math over 560 in the SAT test, how many schools are directly charter-funded?",,SELECT COUNT(T2.`School Code`) FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE T1.AvgScrMath > 560 AND T2.`Charter Funding Type` = 'Directly funded',"SELECT COUNT(DISTINCT s.CDSCode)
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE sat.""AvgScrMath"" > 560
+AND s.""FundingType"" = 'Directly funded';",True,False,1.0,1.0,1.0,1,1,,,,5860.0,42,44,0.000786,XAI,grok-4-1-fast-non-reasoning,False
+10,california_schools,simple,"For the school with the highest average score in Reading in the SAT test, what is its FRPM count for students aged 5-17?",,SELECT T2.`FRPM Count (Ages 5-17)` FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.AvgScrRead DESC LIMIT 1,"SELECT f.""FRPM Count (Ages 5-17)""
+FROM satscores s
+JOIN frpm f ON s.cds = f.""CDSCode""
+WHERE s.""AvgScrRead"" = (
+    SELECT MAX(""AvgScrRead"")
+    FROM satscores
+    WHERE ""AvgScrRead"" IS NOT NULL
+);",False,False,0.0,0.0,0.0,1,0,,,,6550.0,46,58,0.001008,XAI,grok-4-1-fast-non-reasoning,False
+11,california_schools,simple,Please list the codes of the schools with a total enrollment of over 500.,Total enrollment can be represented by `Enrollment (K-12)` + `Enrollment (Ages 5-17)`,SELECT T2.CDSCode FROM schools AS T1 INNER JOIN frpm AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.`Enrollment (K-12)` + T2.`Enrollment (Ages 5-17)` > 500,"SELECT CDSCode FROM frpm WHERE ""Enrollment (K-12)"" + ""Enrollment (Ages 5-17)"" > 500;",True,False,1.0,1.0,1.0,7806,7806,,,,3800.0,54,26,0.000552,XAI,grok-4-1-fast-non-reasoning,True
+12,california_schools,moderate,"Among the schools with an SAT excellence rate of over 0.3, what is the highest eligible free rate for students aged 5-17?",Excellence rate = NumGE1500 / NumTstTakr; Eligible free rates for students aged 5-17 = `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)`,SELECT MAX(CAST(T1.`Free Meal Count (Ages 5-17)` AS REAL) / T1.`Enrollment (Ages 5-17)`) FROM frpm AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE CAST(T2.NumGE1500 AS REAL) / T2.NumTstTakr > 0.3,"SELECT MAX(""Free Meal Count (Ages 5-17)"" / ""Enrollment (Ages 5-17)"") AS highest_eligible_free_rate
+FROM frpm
+JOIN satscores ON frpm.""CDSCode"" = satscores.cds
+WHERE satscores.""NumTstTakr"" > 0
+  AND ""NumGE1500"" / ""NumTstTakr"" > 0.3
+  AND frpm.""Enrollment (Ages 5-17)"" > 0;",False,False,0.0,0.0,0.0,1,1,,,,5990.0,92,72,0.001356,XAI,grok-4-1-fast-non-reasoning,True
+13,california_schools,simple,Please list the phone numbers of the schools with the top 3 SAT excellence rate.,Excellence rate = NumGE1500 / NumTstTakr,SELECT T1.Phone FROM schools AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds ORDER BY CAST(T2.NumGE1500 AS REAL) / T2.NumTstTakr DESC LIMIT 3,"SELECT s.Phone
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE sat.""NumTstTakr"" > 0
+ORDER BY (CAST(COALESCE(sat.""NumGE1500"", 0) AS FLOAT) / sat.""NumTstTakr"") DESC
+LIMIT 3;",True,False,1.0,1.0,1.0,3,3,,,,4780.0,44,54,0.000942,XAI,grok-4-1-fast-non-reasoning,True
+14,california_schools,simple,"List the top five schools, by descending order, from the highest to the lowest, the most number of Enrollment (Ages 5-17). Please give their NCES school identification number.",,SELECT T1.NCESSchool FROM schools AS T1 INNER JOIN frpm AS T2 ON T1.CDSCode = T2.CDSCode ORDER BY T2.`Enrollment (Ages 5-17)` DESC LIMIT 5,"SELECT NCESSchool, ""Enrollment (Ages 5-17)""
+FROM frpm
+ORDER BY ""Enrollment (Ages 5-17)"" DESC
+LIMIT 5;",False,False,0.0,0.0,0.0,5,0,,no such column: NCESSchool,,6570.0,56,30,0.000618,XAI,grok-4-1-fast-non-reasoning,False
+15,california_schools,simple,Which active district has the highest average score in Reading?,,SELECT T1.District FROM schools AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T1.StatusType = 'Active' ORDER BY T2.AvgScrRead DESC LIMIT 1,"SELECT s.""District"" 
+FROM schools s 
+JOIN satscores sat ON s.""CDSCode"" = sat.cds 
+WHERE s.""StatusType"" = 'Active' 
+  AND sat.""AvgScrRead"" IS NOT NULL 
+GROUP BY s.""District"" 
+ORDER BY AVG(sat.""AvgScrRead"") DESC 
+LIMIT 1;",False,False,0.0,0.0,0.0,1,1,,,,5650.0,20,60,0.00096,XAI,grok-4-1-fast-non-reasoning,False
+16,california_schools,simple,How many schools in merged Alameda have number of test takers less than 100?,,SELECT COUNT(T1.CDSCode) FROM schools AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T1.StatusType = 'Merged' AND T2.NumTstTakr < 100 AND T1.County = 'Lake',"SELECT COUNT(*) FROM satscores WHERE cname = 'Alameda' AND ""NumTstTakr"" < 100;",False,False,0.0,0.0,0.0,1,1,,,,6190.0,28,24,0.000444,XAI,grok-4-1-fast-non-reasoning,False
+17,california_schools,simple,"Rank schools by their average score in Writing where the score is greater than 499, showing their charter numbers.",Valid charter number means the number is not null,"SELECT CharterNum, AvgScrWrite, RANK() OVER (ORDER BY AvgScrWrite DESC) AS WritingScoreRank FROM schools AS T1  INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T2.AvgScrWrite > 499 AND CharterNum is not null","SELECT s.CharterNum, AVG(ss.""AvgScrWrite"") AS avg_writing_score
+FROM schools s
+JOIN satscores ss ON s.""CDSCode"" = ss.cds
+WHERE s.""CharterNum"" IS NOT NULL AND ss.""AvgScrWrite"" > 499
+GROUP BY s.CharterNum
+ORDER BY avg_writing_score DESC;",False,False,0.4425,0.5435,0.3731,50,50,,,,6040.0,58,62,0.001104,XAI,grok-4-1-fast-non-reasoning,True
+18,california_schools,simple,How many schools in Fresno (directly funded) have number of test takers not more than 250?,,SELECT COUNT(T1.CDSCode) FROM frpm AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds WHERE T1.`Charter Funding Type` = 'Directly funded' AND T1.`County Name` = 'Fresno' AND T2.NumTstTakr <= 250,"SELECT COUNT(DISTINCT s.CDSCode)
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE s.County = 'Fresno'
+AND s.""FundingType"" = 'Directly Funded'
+AND sat.""NumTstTakr"" <= 250;",False,False,0.0,0.0,0.0,1,1,,,,7500.0,32,52,0.000876,XAI,grok-4-1-fast-non-reasoning,False
+19,california_schools,simple,What is the phone number of the school that has the highest average score in Math?,,SELECT T1.Phone FROM schools AS T1 INNER JOIN satscores AS T2 ON T1.CDSCode = T2.cds ORDER BY T2.AvgScrMath DESC LIMIT 1,"SELECT s.Phone
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE sat.""AvgScrMath"" IS NOT NULL
+GROUP BY s.""CDSCode"", s.Phone
+HAVING AVG(sat.""AvgScrMath"") = (
+    SELECT AVG(sat2.""AvgScrMath"")
+    FROM satscores sat2
+    WHERE sat2.""AvgScrMath"" IS NOT NULL
+    GROUP BY sat2.cds
+    ORDER BY AVG(sat2.""AvgScrMath"") DESC
+    LIMIT 1
+)
+LIMIT 1;",False,False,0.0,0.0,0.0,1,0,,,,3850.0,32,94,0.001506,XAI,grok-4-1-fast-non-reasoning,False
+20,california_schools,simple,How many schools in Amador which the Low Grade is 9 and the High Grade is 12?,,SELECT COUNT(T1.`School Name`) FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.County = 'Amador' AND T1.`Low Grade` = 9 AND T1.`High Grade` = 12,"SELECT COUNT(*) FROM frpm WHERE County_Name = 'Amador' AND ""Low Grade"" = '9' AND ""High Grade"" = '12';",False,False,0.0,0.0,0.0,1,0,,no such column: County_Name,,7890.0,34,36,0.000642,XAI,grok-4-1-fast-non-reasoning,False
+21,california_schools,simple,In Los Angeles how many schools have more than 500 free meals but less than 700 free or reduced price meals for K-12?,,SELECT COUNT(CDSCode) FROM frpm WHERE `County Name` = 'Los Angeles' AND `Free Meal Count (K-12)` > 500 AND `FRPM Count (K-12)`< 700,"SELECT COUNT(DISTINCT f.CDSCode)
+FROM frpm f
+JOIN schools s ON f.CDSCode = s.CDSCode
+WHERE s.County = 'Los Angeles'
+AND f.""Free Meal Count (K-12)"" > 500
+AND f.""FRPM Count (K-12)"" < 700
+AND s.StatusType = 'Currently Open';",False,False,0.0,0.0,0.0,1,1,,,,8680.0,46,72,0.001218,XAI,grok-4-1-fast-non-reasoning,False
+22,california_schools,simple,Which school in Contra Costa has the highest number of test takers?,,SELECT sname FROM satscores WHERE cname = 'Contra Costa' AND sname IS NOT NULL ORDER BY NumTstTakr DESC LIMIT 1,"SELECT s.""School"", MAX(ss.""NumTstTakr"") AS highest_takers
+FROM schools s
+JOIN satscores ss ON s.""CDSCode"" = ss.cds
+WHERE s.County = 'Contra Costa'
+GROUP BY s.""CDSCode"", s.""School""
+HAVING ss.""NumTstTakr"" = (SELECT MAX(""NumTstTakr"") FROM satscores ss2 JOIN schools s2 ON ss2.cds = s2.""CDSCode"" WHERE s2.County = 'Contra Costa');",False,False,0.0,0.0,0.0,1,0,,,,7710.0,24,88,0.001392,XAI,grok-4-1-fast-non-reasoning,False
+23,california_schools,moderate,List the names of schools with more than 30 difference in enrollements between K-12 and ages 5-17? Please also give the full street adress of the schools.,Diffrence in enrollement = `Enrollment (K-12)` - `Enrollment (Ages 5-17)`,"SELECT T1.School, T1.Street FROM schools AS T1 INNER JOIN frpm AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.`Enrollment (K-12)` - T2.`Enrollment (Ages 5-17)` > 30","SELECT ""School"", ""Street"", ""City"", ""Zip""
+FROM frpm
+WHERE ABS(""Enrollment (K-12)"" - ""Enrollment (Ages 5-17)"") > 30;",False,False,0.0,0.0,0.0,1239,1239,,,,4050.0,76,32,0.000708,XAI,grok-4-1-fast-non-reasoning,True
+24,california_schools,moderate,Give the names of the schools with the percent eligible for free meals in K-12 is more than 0.1 and test takers whose test score is greater than or equal to 1500?,Percent eligible for free meals = Free Meal Count (K-12) / Total (Enrollment (K-12),SELECT T2.`School Name` FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE CAST(T2.`Free Meal Count (K-12)` AS REAL) / T2.`Enrollment (K-12)` > 0.1 AND T1.NumGE1500 > 0,"SELECT s.""School"" FROM schools s 
+JOIN frpm f ON s.""CDSCode"" = f.""CDSCode"" 
+JOIN satscores sat ON s.""CDSCode"" = sat.cds 
+WHERE f.""Free Meal Count (K-12)"" / f.""Enrollment (K-12)"" > 0.1 
+AND sat.""NumTstTakr"" > 0 
+AND (COALESCE(sat.""AvgScrRead"", 0) + COALESCE(sat.""AvgScrMath"", 0) + COALESCE(sat.""AvgScrWrite"", 0)) >= 1500;",False,False,0.4474,0.9863,0.2893,1068,307,,,,3710.0,94,88,0.001602,XAI,grok-4-1-fast-non-reasoning,True
+25,california_schools,moderate,"Name schools in Riverside which the average of average math score for SAT is grater than 400, what is the funding type of these schools?",Average of average math = sum(average math scores) / count(schools).,"SELECT T1.sname, T2.`Charter Funding Type` FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE T2.`District Name` LIKE 'Riverside%' GROUP BY T1.sname, T2.`Charter Funding Type` HAVING CAST(SUM(T1.AvgScrMath) AS REAL) / COUNT(T1.cds) > 400","SELECT s.""School"", s.""FundingType"" 
+FROM schools s 
+JOIN satscores sat ON s.""CDSCode"" = sat.cds 
+WHERE s.""County"" = 'Riverside' 
+  AND sat.""AvgScrMath"" IS NOT NULL 
+GROUP BY s.""CDSCode"", s.""School"", s.""FundingType"" 
+HAVING AVG(sat.""AvgScrMath"") > 400;",False,False,0.2059,0.1148,1.0,6,80,,,,7280.0,72,62,0.001146,XAI,grok-4-1-fast-non-reasoning,True
+26,california_schools,moderate,State the names and full communication address of high schools in Monterey which has more than 800 free or reduced price meals for ages 15-17?,"Full communication address should include Street, City, State and zip code if any.","SELECT T1.`School Name`, T2.Street, T2.City, T2.State, T2.Zip FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.County = 'Monterey' AND T1.`Free Meal Count (Ages 5-17)` > 800 AND T1.`School Type` = 'High Schools (Public)'","SELECT s.""School"", s.""Street"" || ', ' || s.""City"" || ', ' || s.""State"" || ' ' || s.""Zip"" AS full_address
+FROM schools s
+JOIN frpm f ON s.""CDSCode"" = f.""CDSCode""
+WHERE s.""County"" = 'Monterey'
+AND (f.""Low Grade"" <= '09' OR f.""Low Grade"" IS NULL)
+AND (f.""High Grade"" >= '12' OR f.""High Grade"" IS NULL)
+AND f.""FRPM Count (Ages 5-17)"" > 800;",False,False,0.0,0.0,0.0,5,0,,,,6300.0,78,122,0.002064,XAI,grok-4-1-fast-non-reasoning,True
+27,california_schools,moderate,"What is the average score in writing for the schools that were opened after 1991 or closed before 2000? List the school names along with the score. Also, list the communication number of the schools if there is any.",Communication number refers to phone number.,"SELECT T2.School, T1.AvgScrWrite, T2.Phone FROM schools AS T2 LEFT JOIN satscores AS T1 ON T2.CDSCode = T1.cds WHERE strftime('%Y', T2.OpenDate) > '1991' OR strftime('%Y', T2.ClosedDate) < '2000'","SELECT s.""School"", AVG(ss.""AvgScrWrite"") as avg_writing_score, s.""Phone""
+FROM schools s
+JOIN satscores ss ON s.""CDSCode"" = ss.cds
+WHERE (s.""OpenDate"" > '1991-12-31' OR s.""ClosedDate"" < '2000-01-01')
+  AND ss.""AvgScrWrite"" IS NOT NULL
+GROUP BY s.""CDSCode"", s.""School"", s.""Phone""
+ORDER BY s.""School"";",False,False,0.1389,0.8127,0.0759,8574,454,,,,3930.0,92,74,0.001386,XAI,grok-4-1-fast-non-reasoning,True
+28,california_schools,challenging,"Consider the average difference between K-12 enrollment and 15-17 enrollment of schools that are locally funded, list the names and DOC type of schools which has a difference above this average.",Difference between K-12 enrollment and 15-17 enrollment can be computed by `Enrollment (K-12)` - `Enrollment (Ages 5-17)`,"SELECT T2.School, T2.DOC FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.FundingType = 'Locally funded' AND (T1.`Enrollment (K-12)` - T1.`Enrollment (Ages 5-17)`) > (SELECT AVG(T3.`Enrollment (K-12)` - T3.`Enrollment (Ages 5-17)`) FROM frpm AS T3 INNER JOIN schools AS T4 ON T3.CDSCode = T4.CDSCode WHERE T4.FundingType = 'Locally funded')","```sql
+WITH locally_funded_avg AS (
+  SELECT AVG(""Enrollment (K-12)"" - ""Enrollment (Ages 5-17)"") AS avg_diff
+  FROM frpm f
+  JOIN schools s ON f.""CDSCode"" = s.""CDSCode""
+  WHERE s.""FundingType"" = 'Local'
+),
+above_avg_schools AS (
+  SELECT s.""School"", s.""DOCType""
+  FROM frpm f
+  JOIN schools s ON f.""CDSCode"" = s.""CDSCode""
+  WHERE s.""FundingType"" = 'Local'
+    AND (""Enrollment (K-12)"" - ""Enrollment (Ages 5-17)"") > (SELECT avg_diff FROM locally_funded_avg)
+)
+SELECT * FROM above_avg_schools;
+```",False,False,0.0,0.0,0.0,57,0,,,,4430.0,98,134,0.002304,XAI,grok-4-1-fast-non-reasoning,True
+29,california_schools,simple,When did the first-through-twelfth-grade school with the largest enrollment open?,K-12 means First-through-twelfth-grade,SELECT T2.OpenDate FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode ORDER BY T1.`Enrollment (K-12)` DESC LIMIT 1,"SELECT ""OpenDate"" FROM schools s JOIN frpm f ON s.""CDSCode"" = f.""CDSCode"" WHERE s.""GSserved"" = 'K-12' AND f.""Enrollment (K-12)"" = (SELECT MAX(""Enrollment (K-12)"") FROM frpm WHERE ""Low Grade"" = 'K' AND ""High Grade"" = '12') ORDER BY ""OpenDate"" ASC LIMIT 1;",True,False,1.0,1.0,1.0,1,1,,,,5880.0,28,82,0.001314,XAI,grok-4-1-fast-non-reasoning,True
+30,california_schools,simple,Which cities have the top 5 lowest enrollment number for students in grades 1 through 12?,K-12 refers to students in grades 1 through 12.,SELECT T2.City FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode GROUP BY T2.City ORDER BY SUM(T1.`Enrollment (K-12)`) ASC LIMIT 5,"SELECT City, SUM(""Enrollment (K-12)"") AS total_enrollment
+FROM frpm f
+JOIN schools s ON f.""CDSCode"" = s.""CDSCode""
+WHERE s.""City"" IS NOT NULL
+  AND s.""StatusType"" = 'Currently Open'
+GROUP BY s.""City""
+HAVING SUM(""Enrollment (K-12)"") IS NOT NULL
+ORDER BY total_enrollment ASC
+LIMIT 5;",False,False,0.0,0.0,0.0,5,0,,,,7330.0,52,82,0.001386,XAI,grok-4-1-fast-non-reasoning,True
+31,california_schools,moderate,What is the eligible free rate of the 10th and 11th schools with the highest enrolment for students in grades 1 through 12?,K-12 refers to students in grades 1 through 12; Eligible free rate for K-12 = `Free Meal Count (K-12)` / `Enrollment (K-12)`,"SELECT CAST(`Free Meal Count (K-12)` AS REAL) / `Enrollment (K-12)` FROM frpm ORDER BY `Enrollment (K-12)` DESC LIMIT 9, 2","SELECT ""Eligible Free Rate""
+FROM (
+    SELECT 
+        ""Free Meal Count (K-12)"" / ""Enrollment (K-12)"" AS ""Eligible Free Rate"",
+        ROW_NUMBER() OVER (ORDER BY ""Enrollment (K-12)"" DESC) AS rn
+    FROM frpm 
+    WHERE ""Enrollment (K-12)"" > 0
+) ranked
+WHERE rn IN (10, 11);",True,False,1.0,1.0,1.0,2,2,,,,6110.0,92,82,0.001506,XAI,grok-4-1-fast-non-reasoning,True
+32,california_schools,moderate,What is the eligible free or reduced price meal rate for the top 5 schools in grades 1-12 with the highest free or reduced price meal count of the schools with the ownership code 66?,grades 1-12 means K-12; Eligible free or reduced price meal rate for K-12 = `FRPM Count (K-12)` / `Enrollment (K-12)`,SELECT CAST(T1.`FRPM Count (K-12)` AS REAL) / T1.`Enrollment (K-12)` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.SOC = 66 ORDER BY T1.`FRPM Count (K-12)` DESC LIMIT 5,"SELECT frpm.""Percent (%) Eligible FRPM (K-12)"" AS eligible_free_reduced_price_meal_rate
+FROM frpm
+JOIN schools ON frpm.""CDSCode"" = schools.""CDSCode""
+WHERE schools.""DOCType"" = '66'
+  AND frpm.""Enrollment (K-12)"" > 0
+ORDER BY frpm.""FRPM Count (K-12)"" DESC
+LIMIT 5;",False,False,0.0,0.0,0.0,5,0,,,,3600.0,112,66,0.001326,XAI,grok-4-1-fast-non-reasoning,True
+33,california_schools,moderate,"If there are any, what are the websites address of the schools with a free meal count of 1,900-2,000 to students aged 5-17? Include the name of the school.",,"SELECT T2.Website, T1.`School Name` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`Free Meal Count (Ages 5-17)` BETWEEN 1900 AND 2000 AND T2.Website IS NOT NULL","SELECT s.""School"", s.""Website""
+FROM frpm f
+JOIN schools s ON f.""CDSCode"" = s.""CDSCode""
+WHERE f.""Free Meal Count (Ages 5-17)"" BETWEEN 1900 AND 2000
+  AND s.""Website"" IS NOT NULL;",True,False,1.0,1.0,1.0,2,2,,,,5540.0,58,56,0.001014,XAI,grok-4-1-fast-non-reasoning,False
+34,california_schools,moderate,What is the free rate for students between the ages of 5 and 17 at the school run by Kacey Gibson?,Eligible free rates for students aged 5-17 = `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)`,SELECT CAST(T2.`Free Meal Count (Ages 5-17)` AS REAL) / T2.`Enrollment (Ages 5-17)` FROM schools AS T1 INNER JOIN frpm AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.AdmFName1 = 'Kacey' AND T1.AdmLName1 = 'Gibson',"SELECT (""Free Meal Count (Ages 5-17)"" / ""Enrollment (Ages 5-17)"") AS free_rate
+FROM frpm f
+JOIN schools s ON f.""CDSCode"" = s.""CDSCode""
+WHERE s.""School"" LIKE '%Kacey Gibson%';",False,False,0.0,0.0,0.0,1,0,,,,4740.0,78,54,0.001044,XAI,grok-4-1-fast-non-reasoning,True
+35,california_schools,moderate,What is the administrator's email address of the chartered school with the fewest students enrolled in grades 1 through 12?,Charted school means `Charter School (Y/N)` = 1 in the table frpm; Students enrolled in grades 1 through 12 refers to `Enrollment (K-12)`,SELECT T2.AdmEmail1 FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`Charter School (Y/N)` = 1 ORDER BY T1.`Enrollment (K-12)` ASC LIMIT 1,"SELECT s.""AdmEmail1"" FROM frpm f JOIN schools s ON f.""CDSCode"" = s.""CDSCode"" WHERE f.""Charter School (Y/N)"" = 1 AND f.""Enrollment (K-12)"" IS NOT NULL ORDER BY f.""Enrollment (K-12)"" ASC LIMIT 1;",True,False,1.0,1.0,1.0,1,1,,,,3350.0,88,62,0.001194,XAI,grok-4-1-fast-non-reasoning,True
+36,california_schools,challenging,Under whose administration is the school with the highest number of students scoring 1500 or more on the SAT? Indicate their full names.,"full name means first name, last name; There are at most 3 administrators for each school; SAT Scores are greater or equal to 1500 refers to NumGE1500","SELECT T2.AdmFName1, T2.AdmLName1, T2.AdmFName2, T2.AdmLName2, T2.AdmFName3, T2.AdmLName3 FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.NumGE1500 DESC LIMIT 1","WITH school_max AS (
+  SELECT s.""CDSCode""
+  FROM satscores st
+  JOIN schools s ON st.cds = s.""CDSCode""
+  WHERE st.""NumGE1500"" IS NOT NULL
+  ORDER BY st.""NumGE1500"" DESC
+  LIMIT 1
+),
+admins AS (
+  SELECT CONCAT_WS(' ', ""AdmFName1"", ""AdmLName1"") AS full_name
+  FROM school_max sm
+  JOIN schools s ON sm.""CDSCode"" = s.""CDSCode""
+  WHERE ""AdmFName1"" IS NOT NULL AND ""AdmLName1"" IS NOT NULL
+  UNION
+  SELECT CONCAT_WS(' ', ""AdmFName2"", ""AdmLName2"")
+  FROM school_max sm
+  JOIN schools s ON sm.""CDSCode"" = s.""CDSCode""
+  WHERE ""AdmFName2"" IS NOT NULL AND ""AdmLName2"" IS NOT NULL
+  UNION
+  SELECT CONCAT_WS(' ', ""AdmFName3"", ""AdmLName3"")
+  FROM school_max sm
+  JOIN schools s ON sm.""CDSCode"" = s.""CDSCode""
+  WHERE ""AdmFName3"" IS NOT NULL AND ""AdmLName3"" IS NOT NULL
+)
+SELECT full_name FROM admins
+ORDER BY full_name;",False,False,0.0,0.0,0.0,1,1,,,,6500.0,102,236,0.003846,XAI,grok-4-1-fast-non-reasoning,True
+37,california_schools,moderate,"What is the complete address of the school with the lowest excellence rate? Indicate the Street, City, Zip and State.","Execellence Rate = NumGE1500 / NumTstTakr; complete address has Street, City, State, Zip code","SELECT T2.Street, T2.City, T2.State, T2.Zip FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY CAST(T1.NumGE1500 AS REAL) / T1.NumTstTakr ASC LIMIT 1","SELECT Street, City, Zip, State 
+FROM schools s
+JOIN satscores t ON s.""CDSCode"" = t.cds
+WHERE t.""NumTstTakr"" > 0
+ORDER BY (t.""NumGE1500""::float / t.""NumTstTakr"") ASC
+LIMIT 1;",False,False,0.0,0.0,0.0,1,0,,"unrecognized token: "":""",,4540.0,70,54,0.00102,XAI,grok-4-1-fast-non-reasoning,True
+38,california_schools,simple,"What are the webpages for the Los Angeles County school that has between 2,000 and 3,000 test takers?",,SELECT T2.Website FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T1.NumTstTakr BETWEEN 2000 AND 3000 AND T2.County = 'Los Angeles',"SELECT s.""Website"" FROM schools s JOIN satscores sat ON s.""CDSCode"" = sat.cds WHERE s.""County"" = 'Los Angeles' AND sat.""NumTstTakr"" BETWEEN 2000 AND 3000;",True,False,1.0,1.0,1.0,3,3,,,,4890.0,36,46,0.000798,XAI,grok-4-1-fast-non-reasoning,False
+39,california_schools,simple,What is the average number of test takers from Fresno schools that opened between 1/1/1980 and 12/31/1980?,between 1/1/1980 and 12/31/1980 means the year = 1980,"SELECT AVG(T1.NumTstTakr) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE strftime('%Y', T2.OpenDate) = '1980' AND T2.County = 'Fresno'","SELECT AVG(sat.NumTstTakr) FROM schools s JOIN satscores sat ON s.""CDSCode"" = sat.cds WHERE s.City = 'Fresno' AND s.OpenDate >= '1980-01-01' AND s.OpenDate <= '1980-12-31';",False,False,0.0,0.0,0.0,1,1,,,,6400.0,54,48,0.000882,XAI,grok-4-1-fast-non-reasoning,True
+40,california_schools,moderate,What is the telephone number for the school with the lowest average score in reading in Fresno Unified?,Fresno Unified is a name of district;,SELECT T2.Phone FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.District = 'Fresno Unified' AND T1.AvgScrRead IS NOT NULL ORDER BY T1.AvgScrRead ASC LIMIT 1,"SELECT ""Phone"" FROM schools WHERE ""District"" = 'Fresno Unified' AND ""CDSCode"" IN (SELECT cds FROM satscores WHERE ""AvgScrRead"" IS NOT NULL AND rtype = 'S') ORDER BY ""AvgScrRead"" ASC LIMIT 1;",False,False,0.0,0.0,0.0,1,1,,,,6980.0,52,62,0.001086,XAI,grok-4-1-fast-non-reasoning,True
+41,california_schools,simple,List the names of virtual schools that are among the top 5 in their respective counties based on average reading scores.,Exclusively virtual refers to Virtual = 'F'; respective counties means PARTITION BY County,"SELECT School FROM (SELECT T2.School,T1.AvgScrRead, RANK() OVER (PARTITION BY T2.County ORDER BY T1.AvgScrRead DESC) AS rnk FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.Virtual = 'F' ) ranked_schools WHERE rnk <= 5","SELECT s.""School""
+FROM schools s
+JOIN satscores t ON s.""CDSCode"" = t.cds
+WHERE s.""Virtual"" = 'F'
+  AND t.""AvgScrRead"" IS NOT NULL
+  AND t.""rtype"" = 'S'
+QUALIFY ROW_NUMBER() OVER (PARTITION BY s.""County"" ORDER BY AVG(t.""AvgScrRead"") DESC) <= 5;",False,False,0.0,0.0,0.0,34,0,,"near ""QUALIFY"": syntax error",,3870.0,70,74,0.00132,XAI,grok-4-1-fast-non-reasoning,True
+42,california_schools,simple,What is the type of education offered in the school who scored the highest average in Math?,,SELECT T2.EdOpsName FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.AvgScrMath DESC LIMIT 1,"SELECT s.""EdOpsName"" FROM schools s INNER JOIN satscores sat ON s.""CDSCode"" = sat.cds WHERE sat.""AvgScrMath"" = (SELECT MAX(""AvgScrMath"") FROM satscores WHERE ""AvgScrMath"" IS NOT NULL) AND sat.""AvgScrMath"" IS NOT NULL;",False,False,0.0,0.0,0.0,1,0,,,,3750.0,34,60,0.001002,XAI,grok-4-1-fast-non-reasoning,False
+43,california_schools,moderate,"What is the average math score of the school with the lowest average score for all subjects, and in which county is it located?",Average score for all subjects can be computed by AvgScrMath + AvgScrRead + AvgScrWrite,"SELECT T1.AvgScrMath, T2.County FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T1.AvgScrMath IS NOT NULL ORDER BY T1.AvgScrMath + T1.AvgScrRead + T1.AvgScrWrite ASC LIMIT 1","SELECT s.""AvgScrMath"", sc.""County""
+FROM main.satscores s
+JOIN main.schools sc ON s.cds = sc.""CDSCode""
+WHERE s.""AvgScrMath"" IS NOT NULL 
+  AND s.""AvgScrRead"" IS NOT NULL 
+  AND s.""AvgScrWrite"" IS NOT NULL
+  AND s.""NumTstTakr"" > 0
+ORDER BY (""AvgScrMath"" + ""AvgScrRead"" + ""AvgScrWrite"") ASC
+LIMIT 1;",True,False,1.0,1.0,1.0,1,1,,,,6400.0,78,84,0.001494,XAI,grok-4-1-fast-non-reasoning,True
+44,california_schools,simple,What is the average writing score of the school who has the highest number of test takers whose total SAT sscores are greater or equal to 1500? Indicate the city to where the school is situated.,,"SELECT T1.AvgScrWrite, T2.City FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.NumGE1500 DESC LIMIT 1","SELECT s.City, ss.AvgScrWrite FROM satscores ss JOIN schools s ON ss.cds = s.""CDSCode"" WHERE ss.""NumGE1500"" = (SELECT MAX(""NumGE1500"") FROM satscores WHERE ""NumGE1500"" IS NOT NULL) AND ss.""AvgScrWrite"" IS NOT NULL;",True,False,1.0,1.0,1.0,1,1,,,,5500.0,72,60,0.001116,XAI,grok-4-1-fast-non-reasoning,False
+45,california_schools,moderate,What is the average writing score of each of the schools managed by Ricci Ulrich? List the schools and the corresponding average writing scores.,"Usually, administrators manage the school stuff.","SELECT T2.School, T1.AvgScrWrite FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.AdmFName1 = 'Ricci' AND T2.AdmLName1 = 'Ulrich'","SELECT s.""School"", AVG(sat.""AvgScrWrite"") AS avg_writing_score
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE (
+  s.""AdmLName1"" = 'Ulrich' AND s.""AdmFName1"" = 'Ricci'
+  OR s.""AdmLName2"" = 'Ulrich' AND s.""AdmFName2"" = 'Ricci'
+  OR s.""AdmLName3"" = 'Ulrich' AND s.""AdmFName3"" = 'Ricci'
+)
+GROUP BY s.""School""
+ORDER BY s.""School"";",False,False,0.5,0.5,0.5,1,1,,,,4710.0,62,94,0.001596,XAI,grok-4-1-fast-non-reasoning,True
+46,california_schools,simple,Which state special schools have the highest number of enrollees from grades 1 through 12?,State Special Schools refers to DOC = 31; Grades 1 through 12 means K-12,SELECT T2.School FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.DOC = 31 ORDER BY T1.`Enrollment (K-12)` DESC LIMIT 1,"SELECT s.""School"", COALESCE(SUM(f.""Enrollment (K-12)""), 0) AS total_enrollees
+FROM main.schools s
+LEFT JOIN main.frpm f ON s.""CDSCode"" = f.""CDSCode""
+WHERE s.""DOC"" = '31'
+  AND s.""GSserved"" LIKE '%12%'
+GROUP BY s.""CDSCode"", s.""School""
+ORDER BY total_enrollees DESC
+LIMIT 10;",False,False,0.2857,0.1667,1.0,1,3,,,,6630.0,60,72,0.00126,XAI,grok-4-1-fast-non-reasoning,True
+47,california_schools,moderate,What is the monthly average number of schools that opened in Alameda County under the jurisdiction of the Elementary School District in 1980?,Elementary School District refers to DOC = 52; Monthly average number of schools that opened in 1980 = count(schools that opened in 1980) / 12,"SELECT CAST(COUNT(School) AS REAL) / 12 FROM schools WHERE DOC = 52 AND County = 'Alameda' AND strftime('%Y', OpenDate) = '1980'","SELECT COUNT(*) / 12.0 AS monthly_average FROM schools WHERE County = 'Alameda County' AND DOC = '52' AND strftime('%Y', OpenDate) = '1980';",False,False,0.0,0.0,0.0,1,1,,,,3420.0,98,44,0.000954,XAI,grok-4-1-fast-non-reasoning,True
+48,california_schools,moderate,What is the ratio of merged Unified School District schools in Orange County to merged Elementary School District schools?,Elementary School District refers to DOC = 52; Unified School District refers to DOC = 54.,SELECT CAST(SUM(CASE WHEN DOC = 54 THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN DOC = 52 THEN 1 ELSE 0 END) FROM schools WHERE StatusType = 'Merged' AND County = 'Orange',"SELECT CAST(COALESCE(merged_unified, 0) AS FLOAT) / NULLIF(COALESCE(merged_elem, 0), 0) AS ratio
+FROM (
+  SELECT 
+    SUM(CASE WHEN s.DOC = '54' THEN 1 ELSE 0 END) AS merged_unified,
+    SUM(CASE WHEN s.DOC = '52' THEN 1 ELSE 0 END) AS merged_elem
+  FROM schools s
+  WHERE s.County = 'Orange'
+    AND s.StatusType = 'Merged'
+) t",True,False,1.0,1.0,1.0,1,1,,,,5590.0,72,102,0.001746,XAI,grok-4-1-fast-non-reasoning,True
+49,california_schools,moderate,Which different county has the most number of closed schools? Please provide the name of each school as well as the closure date.,Closure date and closed date are synonyms; 'Closed' was mentioned in schools.StatusType.,"SELECT DISTINCT County, School, ClosedDate FROM schools WHERE County = ( SELECT County FROM schools WHERE StatusType = 'Closed' GROUP BY County ORDER BY COUNT(School) DESC LIMIT 1 ) AND StatusType = 'Closed' AND school IS NOT NULL","WITH county_counts AS (
+  SELECT 
+    County,
+    COUNT(*) as num_closed
+  FROM schools 
+  WHERE StatusType = 'Closed' 
+    AND ClosedDate IS NOT NULL
+  GROUP BY County
+)
+SELECT 
+  cc.County,
+  s.School,
+  s.ClosedDate
+FROM county_counts cc
+JOIN schools s ON s.County = cc.County
+WHERE s.StatusType = 'Closed' 
+  AND s.ClosedDate IS NOT NULL
+  AND cc.num_closed = (SELECT MAX(num_closed) FROM county_counts)
+ORDER BY s.School;",True,False,1.0,1.0,1.0,858,867,,,,5610.0,72,114,0.001926,XAI,grok-4-1-fast-non-reasoning,True
+50,california_schools,simple,What is the postal street address for the school with the 7th highest Math average? Indicate the school's name.,Postal street and mailing street are synonyms.,"SELECT T2.MailStreet, T2.School FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.AvgScrMath DESC LIMIT 6, 1","SELECT ""School"", ""Street"" || ' ' || ""City"" || ', ' || ""State"" || ' ' || ""Zip"" AS postal_street_address
+FROM schools s
+JOIN satscores t ON s.""CDSCode"" = t.cds
+WHERE t.""AvgScrMath"" IS NOT NULL
+ORDER BY t.""AvgScrMath"" DESC
+LIMIT 1 OFFSET 6;",False,False,0.5,0.5,0.5,1,1,,,,5150.0,54,86,0.001452,XAI,grok-4-1-fast-non-reasoning,True
+51,california_schools,simple,In which mailing street address can you find the school that has the lowest average score in reading? Also give the school's name.,,"SELECT T2.MailStreet, T2.School FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T1.AvgScrRead IS NOT NULL ORDER BY T1.AvgScrRead ASC LIMIT 1","SELECT s.""MailStreet"", s.""School""
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE sat.""AvgScrRead"" = (
+    SELECT MIN(""AvgScrRead"")
+    FROM satscores
+    WHERE ""AvgScrRead"" IS NOT NULL
+)
+AND sat.""AvgScrRead"" IS NOT NULL;",False,False,0.0,0.0,0.0,1,0,,,,5180.0,46,64,0.001098,XAI,grok-4-1-fast-non-reasoning,False
+52,california_schools,simple,What is the total number of schools whose total SAT scores are greater or equal to 1500 whose mailing city is Lakeport?,Total SAT scores can be computed by AvgScrRead + AvgScrMath + AvgScrWrite,SELECT COUNT(T1.cds) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.MailCity = 'Lakeport' AND (T1.AvgScrRead + T1.AvgScrMath + T1.AvgScrWrite) >= 1500,"SELECT COUNT(*) FROM schools s JOIN satscores t ON s.""CDSCode"" = t.cds WHERE s.""MailCity"" = 'Lakeport' AND (t.""AvgScrRead"" + t.""AvgScrMath"" + t.""AvgScrWrite"") >= 1500",True,False,1.0,1.0,1.0,1,1,,,,7100.0,70,48,0.00093,XAI,grok-4-1-fast-non-reasoning,True
+53,california_schools,simple,How many test takers are there at the school/s whose mailing city address is in Fresno?,,SELECT T1.NumTstTakr FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.MailCity = 'Fresno',"SELECT SUM(""NumTstTakr"") FROM satscores s JOIN schools sch ON s.cds = sch.""CDSCode"" WHERE sch.""MailCity"" = 'Fresno';",False,False,0.0,0.0,0.0,32,1,,,,7480.0,32,32,0.000576,XAI,grok-4-1-fast-non-reasoning,False
+54,california_schools,simple,Please specify all of the schools and their related mailing zip codes that are under Avetik Atoian's administration.,,"SELECT School, MailZip FROM schools WHERE AdmFName1 = 'Avetik' AND AdmLName1 = 'Atoian'","SELECT ""School"", ""MailZip"" FROM schools WHERE ""AdmLName1"" = 'Atoian' OR ""AdmLName2"" = 'Atoian' OR ""AdmLName3"" = 'Atoian';",False,False,0.4444,0.2857,1.0,1,5,,,,4380.0,36,34,0.000618,XAI,grok-4-1-fast-non-reasoning,False
+55,california_schools,moderate,"Of the schools with a mailing state address in California, what is the ratio of the schools located in the county of Colusa against the school located in the county of Humboldt?",Ratio = count(schools in Colusa) / count(schools in Humboldt),SELECT CAST(SUM(CASE WHEN County = 'Colusa' THEN 1 ELSE 0 END) AS REAL) / SUM(CASE WHEN County = 'Humboldt' THEN 1 ELSE 0 END) FROM schools WHERE MailState = 'CA',"SELECT COUNT(CASE WHEN ""County"" = 'Colusa' THEN 1 END)::float / COUNT(CASE WHEN ""County"" = 'Humboldt' THEN 1 END) FROM schools WHERE ""MailState"" = 'CA';",False,False,0.0,0.0,0.0,1,0,,"unrecognized token: "":""",,3670.0,84,48,0.000972,XAI,grok-4-1-fast-non-reasoning,True
+56,california_schools,simple,"Of all the schools with a mailing state address in California, how many are active in San Joaquin city?",,SELECT COUNT(CDSCode) FROM schools WHERE City = 'San Joaquin' AND MailState = 'CA' AND StatusType = 'Active',"SELECT COUNT(*) FROM schools WHERE ""MailState"" = 'CA' AND ""MailCity"" = 'San Joaquin' AND ""StatusType"" = 'Active';",False,False,0.0,0.0,0.0,1,1,,,,3220.0,38,34,0.000624,XAI,grok-4-1-fast-non-reasoning,False
+57,california_schools,simple,What is the phone number and extension number for the school that had the 333rd highest average writing score?,,"SELECT T2.Phone, T2.Ext FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.AvgScrWrite DESC LIMIT 332, 1","SELECT Phone, Ext FROM schools s JOIN satscores t ON s.""CDSCode"" = t.cds WHERE t.""AvgScrWrite"" IS NOT NULL ORDER BY t.""AvgScrWrite"" ASC LIMIT 1 OFFSET 332;",False,False,0.0,0.0,0.0,1,1,,,,4880.0,38,52,0.000894,XAI,grok-4-1-fast-non-reasoning,False
+58,california_schools,simple,What is the phone number and extension number for the school with the zip code 95203-3704? Indicate the school's name.,,"SELECT Phone, Ext, School FROM schools WHERE Zip = '95203-3704'","SELECT ""School"", ""Phone"", ""Ext"" FROM schools WHERE ""Zip"" = '95203-3704';",True,False,1.0,1.0,1.0,1,1,,,,3900.0,40,20,0.00042,XAI,grok-4-1-fast-non-reasoning,False
+59,california_schools,simple,What is the website for the schools under the administrations of Mike Larson and Dante Alvarez?,,SELECT Website FROM schools WHERE (AdmFName1 = 'Mike' AND AdmLName1 = 'Larson') OR (AdmFName1 = 'Dante' AND AdmLName1 = 'Alvarez'),"SELECT DISTINCT Website FROM schools WHERE (AdmFName1 || ' ' || AdmLName1 IN ('Mike Larson', 'Dante Alvarez') OR AdmFName2 || ' ' || AdmLName2 IN ('Mike Larson', 'Dante Alvarez') OR AdmFName3 || ' ' || AdmLName3 IN ('Mike Larson', 'Dante Alvarez')) AND Website IS NOT NULL;",True,False,1.0,1.0,1.0,2,2,,,,5100.0,32,92,0.001476,XAI,grok-4-1-fast-non-reasoning,False
+60,california_schools,simple,What are the websites for all the partially virtual chartered schools located in San Joaquin?,Virtual = 'P' means partially virtual; Charter schools refers to Charter = 1 in the table schools,SELECT Website FROM schools WHERE County = 'San Joaquin' AND Virtual = 'P' AND Charter = 1,SELECT Website FROM schools WHERE Virtual = 'P' AND Charter = 1 AND County = 'San Joaquin',True,False,1.0,1.0,1.0,2,2,,,,2910.0,66,34,0.000708,XAI,grok-4-1-fast-non-reasoning,True
+61,california_schools,simple,How many chartered schools located in the city of Hickman are owned by the Elementary School District?,Elementary School District refers to DOC = 52; Chartered schools refer to Charter = 1 in the table schools,SELECT COUNT(School) FROM schools WHERE DOC = 52 AND Charter = 1 AND City = 'Hickman',"SELECT COUNT(*) FROM schools WHERE City = 'Hickman' AND ""Charter"" = 1 AND ""DOC"" = '52';",True,False,1.0,1.0,1.0,1,1,,,,4670.0,74,32,0.000702,XAI,grok-4-1-fast-non-reasoning,True
+62,california_schools,challenging,What is the total number of non-chartered schools in the county of Los Angeles with a percent (%) of eligible free meals for grades 1 through 12 that is less than 0.18%?,non-chartered schools refer to schools whose Charter = 0; K-12 means grades 1 through 12; percent of eligible free rate for K-12 = `Free Meal Count (K-12)` * 100 / `Enrollment (K-12)`,SELECT COUNT(T2.School) FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.County = 'Los Angeles' AND T2.Charter = 0 AND CAST(T1.`Free Meal Count (K-12)` AS REAL) * 100 / T1.`Enrollment (K-12)` < 0.18,"SELECT COUNT(*) FROM frpm s JOIN schools f ON s.""CDSCode"" = f.""CDSCode"" WHERE f.""County"" = 'Los Angeles' AND f.Charter = 0 AND (""Free Meal Count (K-12)"" * 100 / ""Enrollment (K-12)"") < 0.18;",True,False,1.0,1.0,1.0,1,1,,,,6750.0,130,66,0.00138,XAI,grok-4-1-fast-non-reasoning,True
+63,california_schools,simple,"In chartered schools with charter number 00D2, what are the names of all the administrators? Include the name of the school and the city to which it belongs","Chartered schools refer to Charter = 1 in the table schools; Full name refers to first name, last name","SELECT AdmFName1, AdmLName1, School, City FROM schools WHERE Charter = 1 AND CharterNum = '00D2'","SELECT ""School"" AS school_name, ""City"" AS city, TRIM(CONCAT(""AdmFName1"", ' ', ""AdmLName1"")) AS administrator1, TRIM(CONCAT(""AdmFName2"", ' ', ""AdmLName2"")) AS administrator2, TRIM(CONCAT(""AdmFName3"", ' ', ""AdmLName3"")) AS administrator3
+FROM schools
+WHERE ""Charter"" = 1 AND ""CharterNum"" = '00D2';",False,False,0.4865,0.5625,0.4286,8,8,,,,3570.0,96,70,0.001338,XAI,grok-4-1-fast-non-reasoning,True
+64,california_schools,simple,What is the total number of schools with a mailing city in Hickman belonging to the charter number 00D4?,,SELECT COUNT(*) FROM schools WHERE CharterNum = '00D4' AND MailCity = 'Hickman',"SELECT COUNT(*) FROM schools WHERE ""MailCity"" = 'Hickman' AND ""CharterNum"" = '00D4';",True,False,1.0,1.0,1.0,1,1,,,,4220.0,38,24,0.000474,XAI,grok-4-1-fast-non-reasoning,False
+65,california_schools,moderate,What is the ratio in percentage of Santa Clara County schools that are locally funded compared to all other types of charter school funding?,Ratio in percentage = (count(locally funded schools in Santa Clara) / count(all funding type schools in Santa Clara) * 100%,SELECT CAST(SUM(CASE WHEN FundingType = 'Locally funded' THEN 1 ELSE 0 END) AS REAL) * 100 / SUM(CASE WHEN FundingType != 'Locally funded' THEN 1 ELSE 0 END) FROM schools WHERE County = 'Santa Clara' AND Charter = 1,"SELECT ROUND(100.0 * COUNT(CASE WHEN f.""Charter Funding Type"" = 'Local' THEN 1 END) / COUNT(f.""Charter Funding Type""), 2) AS percentage
+FROM schools s
+JOIN frpm f ON s.""CDSCode"" = f.""CDSCode""
+WHERE s.""County"" = 'Santa Clara'
+AND s.""Charter"" = 1
+AND f.""Charter Funding Type"" IS NOT NULL;",False,False,0.0,0.0,0.0,1,1,,,,3990.0,90,92,0.00165,XAI,grok-4-1-fast-non-reasoning,True
+66,california_schools,simple,"Between 1/1/2000 to 12/31/2005, how many directly funded schools opened in the county of Stanislaus?",Directly funded schools refers to FundingType = 'Directly Funded',"SELECT COUNT(School) FROM schools WHERE strftime('%Y', OpenDate) BETWEEN '2000' AND '2005' AND County = 'Stanislaus' AND FundingType = 'Directly funded'","SELECT COUNT(*) FROM schools WHERE ""County"" = 'Stanislaus' AND ""FundingType"" = 'Directly Funded' AND ""OpenDate"" BETWEEN '2000-01-01' AND '2005-12-31';",False,False,0.0,0.0,0.0,1,1,,,,3580.0,50,38,0.00072,XAI,grok-4-1-fast-non-reasoning,True
+67,california_schools,simple,What is the total amount of Community College District closure in 1989 in the city of San Francisco?,,"SELECT COUNT(School) FROM schools WHERE strftime('%Y', ClosedDate) = '1989' AND City = 'San Francisco' AND DOCType = 'Community College District'",SELECT SUM(amount) FROM closures WHERE district_type = 'Community College District' AND closure_year = 1989 AND city = 'San Francisco';,False,False,0.0,0.0,0.0,1,0,,no such table: closures,,6610.0,36,38,0.000678,XAI,grok-4-1-fast-non-reasoning,False
+68,california_schools,moderate,Which county reported the most number of school closure in the 1980s with school wonership code belonging to Youth Authority Facilities (CEA)?,Youth Authority Facilities (CEA) refers to SOC = 11; 1980s = years between 1980 and 1989,"SELECT County FROM schools WHERE strftime('%Y', ClosedDate) BETWEEN '1980' AND '1989' AND StatusType = 'Closed' AND SOC = 11 GROUP BY County ORDER BY COUNT(School) DESC LIMIT 1","SELECT ""County"" 
+FROM schools 
+WHERE ""SOC"" = '11' 
+  AND ""ClosedDate"" IS NOT NULL 
+  AND strftime('%Y', ""ClosedDate"") BETWEEN '1980' AND '1989'
+GROUP BY ""County""
+ORDER BY COUNT(*) DESC
+LIMIT 1;",True,False,1.0,1.0,1.0,1,1,,,,4970.0,78,58,0.001104,XAI,grok-4-1-fast-non-reasoning,True
+69,california_schools,simple,Please provide the National Center for Educational Statistics school district identification number for all schools with a School Ownership Code that are part of the State Special Schools.,State Special Schools means that SOC = 31.,SELECT NCESDist FROM schools WHERE SOC = 31,SELECT NCESDist FROM schools WHERE SOC = '31';,True,False,1.0,1.0,1.0,3,3,,,,6440.0,74,16,0.000462,XAI,grok-4-1-fast-non-reasoning,True
+70,california_schools,simple,How many active and closed District Community Day Schools are there in the county of Alpine?,,SELECT COUNT(School) FROM schools WHERE (StatusType = 'Closed' OR StatusType = 'Active') AND SOC = 69 AND County = 'Alpine',"SELECT StatusType, COUNT(*) FROM schools WHERE County = 'Alpine' AND ""School"" LIKE '%District Community Day School%' GROUP BY StatusType;",False,False,0.0,0.0,0.0,1,0,,,,5750.0,32,38,0.000666,XAI,grok-4-1-fast-non-reasoning,False
+71,california_schools,simple,What is the district code for the School that does not offer a magnet program in the city of Fresno?,"When magent is equal to 0 in the database, it means ths school doesn't offer a magnet program.",SELECT T1.`District Code` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.City = 'Fresno' AND T2.Magnet = 0,"SELECT ""District Code"" FROM frpm WHERE ""CDSCode"" IN (SELECT ""CDSCode"" FROM schools WHERE ""City"" = 'Fresno' AND ""Magnet"" = 0) LIMIT 1;",False,False,0.1333,1.0,0.0714,151,1,,,,5890.0,78,44,0.000894,XAI,grok-4-1-fast-non-reasoning,True
+72,california_schools,moderate,How many students from the ages of 5 to 17 are enrolled at the State Special School school in Fremont for the 2014-2015 academic year?,State Special School means EdOpsCode = 'SSS',SELECT T1.`Enrollment (Ages 5-17)` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.EdOpsCode = 'SSS' AND T2.City = 'Fremont' AND T1.`Academic Year` BETWEEN 2014 AND 2015,"SELECT SUM(""Enrollment (Ages 5-17)"") FROM frpm f JOIN schools s ON f.""CDSCode"" = s.""CDSCode"" WHERE s.""EdOpsCode"" = 'SSS' AND s.""School"" LIKE '%Fremont%' AND f.""Academic Year"" = '2014-2015';",False,False,0.6667,1.0,0.5,2,1,,,,4930.0,66,54,0.001008,XAI,grok-4-1-fast-non-reasoning,True
+73,california_schools,simple,What is the free or reduced price meal count for ages 5 to 17 in the Youth Authority School with a mailing street address of PO Box 1040?,,SELECT T1.`FRPM Count (Ages 5-17)` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.MailStreet = 'PO Box 1040' AND T2.SOCType = 'Youth Authority Facilities',"SELECT ""Free Meal Count (Ages 5-17)""
+FROM frpm
+JOIN schools ON frpm.""CDSCode"" = schools.""CDSCode""
+WHERE schools.""School"" = 'Youth Authority School'
+AND schools.""MailStreet"" = 'PO Box 1040';",False,False,0.0,0.0,0.0,1,0,,,,5830.0,56,52,0.000948,XAI,grok-4-1-fast-non-reasoning,False
+74,california_schools,moderate,What is the lowest grade for the District Special Education Consortia School with National Center for Educational Statistics school district identification number of 0613360?,District Special Education Consortia School refers to EdOpsCode = 'SPECON'.,SELECT MIN(T1.`Low Grade`) FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.NCESDist = '0613360' AND T2.EdOpsCode = 'SPECON',"SELECT MIN(""Low Grade"") FROM frpm WHERE ""CDSCode"" IN (SELECT ""CDSCode"" FROM schools WHERE ""NCESDist"" = '0613360' AND ""EdOpsCode"" = 'SPECON');",True,False,1.0,1.0,1.0,1,1,,,,3400.0,70,40,0.00081,XAI,grok-4-1-fast-non-reasoning,True
+75,california_schools,simple,What is the educational level name for the schools with Breakfast Provision 2 in county code 37? Indicate the name of the school.,,"SELECT T2.EILName, T2.School FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`NSLP Provision Status` = 'Breakfast Provision 2' AND T1.`County Code` = 37","SELECT DISTINCT f.""EILName"", s.""School""
+FROM frpm f
+JOIN schools s ON f.""CDSCode"" = s.""CDSCode""
+WHERE f.""County Code"" = '37' AND f.""NSLP Provision Status"" = '2';",False,False,0.0,0.0,0.0,8,0,,no such column: f.EILName,,6590.0,46,50,0.000888,XAI,grok-4-1-fast-non-reasoning,False
+76,california_schools,moderate,What is the city location of the high school level school with Lunch Provision 2 whose lowest grade is 9 and the highest grade is 12 in the county of Merced?,High school can be represented as EILCode = 'HS',SELECT T2.City FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`NSLP Provision Status` = 'Lunch Provision 2' AND T2.County = 'Merced' AND T1.`Low Grade` = 9 AND T1.`High Grade` = 12 AND T2.EILCode = 'HS',"SELECT City FROM schools s JOIN frpm f ON s.""CDSCode"" = f.""CDSCode"" WHERE s.""EILCode"" = 'HS' AND f.""NSLP Provision Status"" = '2' AND f.""Low Grade"" = '9' AND f.""High Grade"" = '12' AND s.""County"" = 'Merced';",False,False,0.0,0.0,0.0,1,0,,,,4750.0,82,72,0.001326,XAI,grok-4-1-fast-non-reasoning,True
+77,california_schools,moderate,Which schools served a grade span of Kindergarten to 9th grade in the county of Los Angeles and what is its Percent (%) Eligible FRPM (Ages 5-17)?,Percent (%) Eligible FRPM (Ages 5-17) can be acquired by `FRPM Count (Ages 5-17)` / `Enrollment (Ages 5-17)` * 100,"SELECT T2.School, T1.`FRPM Count (Ages 5-17)` * 100 / T1.`Enrollment (Ages 5-17)` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.County = 'Los Angeles' AND T2.GSserved = 'K-9'","SELECT s.School, ROUND( (f.""FRPM Count (Ages 5-17)"" / f.""Enrollment (Ages 5-17)"" * 100), 2 ) AS ""Percent (%) Eligible FRPM (Ages 5-17)""
+FROM schools s
+JOIN frpm f ON s.""CDSCode"" = f.""CDSCode""
+WHERE s.County = 'Los Angeles'
+AND s.GSserved = 'K-9';",False,False,0.5,0.5,0.5,2,2,,,,6080.0,96,82,0.001518,XAI,grok-4-1-fast-non-reasoning,True
+78,california_schools,simple,What is the most common type of grade span served in the city of Adelanto?,,SELECT GSserved FROM schools WHERE City = 'Adelanto' GROUP BY GSserved ORDER BY COUNT(GSserved) DESC LIMIT 1,SELECT GSserved FROM schools WHERE City = 'Adelanto' AND GSserved IS NOT NULL GROUP BY GSserved ORDER BY COUNT(*) DESC LIMIT 1;,True,False,1.0,1.0,1.0,1,1,,,,2260.0,30,44,0.00075,XAI,grok-4-1-fast-non-reasoning,False
+79,california_schools,moderate,"Between San Diego and Santa Barbara, which county offers the most number of schools that does not offer physical building? Indicate the amount.",'Does not offer physical building' means Virtual = F in the database.,"SELECT County, COUNT(Virtual) FROM schools WHERE (County = 'San Diego' OR County = 'Santa Barbara') AND Virtual = 'F' GROUP BY County ORDER BY COUNT(Virtual) DESC LIMIT 1","SELECT County, COUNT(*) AS count
+FROM schools
+WHERE County IN ('San Diego', 'Santa Barbara')
+AND Virtual = 'F'
+AND StatusType = 'Active'  -- assuming open schools
+GROUP BY County
+ORDER BY count DESC
+LIMIT 1;",False,False,0.5,0.5,0.5,1,1,,,,3670.0,72,70,0.001266,XAI,grok-4-1-fast-non-reasoning,True
+80,california_schools,simple,What is the school type of the school with the highest latitude? Indicate the name of the school as well as the latitude coordinates.,,"SELECT T1.`School Type`, T1.`School Name`, T2.Latitude FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode ORDER BY T2.Latitude DESC LIMIT 1","SELECT ""School"", ""Latitude"", ""DOCType"" FROM schools WHERE ""Latitude"" = (SELECT MAX(""Latitude"") FROM schools);",False,False,0.5714,0.5,0.6667,1,2,,,,6650.0,48,26,0.000534,XAI,grok-4-1-fast-non-reasoning,False
+81,california_schools,moderate,In which city can you find the school in the state of California with the lowest latitude coordinates and what is its lowest grade? Indicate the school name.,State of California refers to state = 'CA',"SELECT T2.City, T1.`Low Grade`, T1.`School Name` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.State = 'CA' ORDER BY T2.Latitude ASC LIMIT 1","SELECT s.City, f.""Low Grade"", s.""School"" FROM schools s JOIN frpm f ON s.""CDSCode"" = f.""CDSCode"" WHERE s.State = 'CA' AND s.Latitude IS NOT NULL AND f.""Low Grade"" IS NOT NULL ORDER BY s.Latitude ASC LIMIT 1;",False,False,0.0,0.0,0.0,1,1,,,,3520.0,74,72,0.001302,XAI,grok-4-1-fast-non-reasoning,True
+82,california_schools,simple,What is the grade span offered in the school with the highest longitude?,the highest longitude refers to the school with the maximum absolute longitude value.,SELECT GSoffered FROM schools ORDER BY ABS(longitude) DESC LIMIT 1,SELECT GSoffered FROM schools WHERE abs(Longitude) = (SELECT max(abs(Longitude)) FROM schools) AND GSoffered IS NOT NULL LIMIT 1;,True,False,1.0,1.0,1.0,1,1,,,,4200.0,54,36,0.000702,XAI,grok-4-1-fast-non-reasoning,True
+83,california_schools,challenging,"Of the schools that offers a magnet program serving a grade span of Kindergarten to 8th grade, how many offers Multiple Provision Types? List the number of cities that offers a Kindergarten to 8th grade span and indicate how many schools are there serving such grade span for each city.",Kindergarten to 8th grade refers to K-8; 'Offers a magnet program' means Magnet = 1; Multiple Provision Types refers to `NSLP Provision Status` = 'Multiple Provision Types',"SELECT T2.City, COUNT(T2.CDSCode) FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.Magnet = 1 AND T2.GSoffered = 'K-8' AND T1.`NSLP Provision Status` = 'Multiple Provision Types' GROUP BY T2.City","WITH k8_schools AS (
+  SELECT DISTINCT s.CDSCode, s.City
+  FROM schools s
+  JOIN frpm f ON s.CDSCode = f.CDSCode
+  WHERE s.Magnet = 1 
+    AND s.GSserved LIKE '%K-8%'
+),
+city_counts AS (
+  SELECT City, COUNT(*) as school_count
+  FROM k8_schools
+  GROUP BY City
+),
+multiple_prov_types_count AS (
+  SELECT COUNT(DISTINCT ks.CDSCode) 
+  FROM k8_schools ks
+  JOIN frpm f ON ks.CDSCode = f.CDSCode
+  WHERE f.""NSLP Provision Status"" = 'Multiple Provision Types'
+)
+SELECT 
+  (SELECT * FROM multiple_prov_types_count) as num_multiple_provision,
+  cc.City,
+  cc.school_count
+FROM city_counts cc
+ORDER BY cc.school_count DESC;",False,False,0.1667,0.0909,1.0,1,18,,,,7980.0,156,164,0.002928,XAI,grok-4-1-fast-non-reasoning,True
+84,california_schools,simple,What are the two most common first names among the school administrators? Indicate the district to which they administer.,,"SELECT DISTINCT T1.AdmFName1, T1.District FROM schools AS T1 INNER JOIN ( SELECT admfname1 FROM schools GROUP BY admfname1 ORDER BY COUNT(admfname1) DESC LIMIT 2 ) AS T2 ON T1.AdmFName1 = T2.admfname1","SELECT ""District"", ""AdmFName1"" as first_name, COUNT(*) as count
+FROM schools
+WHERE ""AdmFName1"" IS NOT NULL
+GROUP BY ""District"", ""AdmFName1""
+ORDER BY count DESC
+LIMIT 2;",False,False,0.0204,0.4,0.0105,215,2,,,,2540.0,38,50,0.000864,XAI,grok-4-1-fast-non-reasoning,False
+85,california_schools,moderate,What is the Percent (%) Eligible Free (K-12) in the school administered by an administrator whose first name is Alusine. List the district code of the school.,Percent (%) Eligible Free (K-12) = `Free Meal Count (K-12)` / `Enrollment (K-12)` * 100%,"SELECT T1.`Free Meal Count (K-12)` * 100 / T1.`Enrollment (K-12)`, T1.`District Code` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.AdmFName1 = 'Alusine'","SELECT frpm.""District Code"" FROM frpm JOIN schools ON frpm.""CDSCode"" = schools.""CDSCode"" WHERE schools.""AdmFName1"" = 'Alusine' GROUP BY frpm.""District Code"";",False,False,0.6667,1.0,0.5,1,1,,,,6260.0,86,38,0.000828,XAI,grok-4-1-fast-non-reasoning,True
+86,california_schools,simple,"What is the administrator's last name that oversees the school with Charter number 40? Indicate the district, the county where the school is situated, and the name of the school.",,"SELECT AdmLName1, District, County, School FROM schools WHERE CharterNum = '0040'","SELECT ""AdmLName1"" AS administrator_last_name, ""District"" AS district, ""County"" AS county, ""School"" AS school_name FROM schools WHERE ""CharterNum"" = '40';",False,False,0.0,0.0,0.0,1,0,,,,4910.0,60,38,0.00075,XAI,grok-4-1-fast-non-reasoning,False
+87,california_schools,challenging,"What are the valid e-mail addresses of the administrator of the school located in the San Bernardino county, City of San Bernardino City Unified that opened between 1/1/2009 to 12/31/2010 whose school types are public Intermediate/Middle Schools and Unified Schools?",Intermediate/Middle Schools refers to SOC = 62; Unified School refers to DOC = 54; years between 2009 and 2010 can refer to 'between 1/1/2009 to 12/31/2010',"SELECT T2.AdmEmail1, T2.AdmEmail2 FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.County = 'San Bernardino' AND T2.City = 'San Bernardino' AND T2.DOC = 54 AND strftime('%Y', T2.OpenDate) BETWEEN '2009' AND '2010' AND T2.SOC = 62","SELECT DISTINCT AdmEmail1, AdmEmail2, AdmEmail3 FROM schools WHERE County = 'San Bernardino' AND City = 'San Bernardino City Unified' AND OpenDate BETWEEN '2009-01-01' AND '2010-12-31' AND (SOC = '62' OR DOC = '54') AND (AdmEmail1 IS NOT NULL OR AdmEmail2 IS NOT NULL OR AdmEmail3 IS NOT NULL);",False,False,0.0,0.0,0.0,1,0,,,,5570.0,134,96,0.001842,XAI,grok-4-1-fast-non-reasoning,True
+88,california_schools,simple,What is the administrator's email address for the school with the highest number of test takers who received SAT scores of at least 1500?Provide the name of the school.,,"SELECT T2.AdmEmail1, T2.School FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.NumGE1500 DESC LIMIT 1","SELECT s.""School"", s.""AdmEmail1"" FROM schools s JOIN satscores sat ON s.""CDSCode"" = sat.cds WHERE sat.""NumGE1500"" = (SELECT MAX(""NumGE1500"") FROM satscores WHERE ""NumGE1500"" > 0) AND s.""AdmEmail1"" IS NOT NULL;",True,False,1.0,1.0,1.0,1,1,,,,4380.0,58,58,0.001044,XAI,grok-4-1-fast-non-reasoning,False
