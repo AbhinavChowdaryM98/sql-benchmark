@@ -87,7 +87,7 @@ HINT_TEMPLATE = (
 
 # ── Agent call ────────────────────────────────────────────────────────────────
 
-def build_payload(question: str, evidence: str, config: dict, db_id: str = None) -> dict:
+def build_payload(question: str, evidence: str, config: dict, db_id: str = None, use_qdrant_hints: bool = False) -> dict:
     # Original conversation history approach (commented out due to poor performance)
     # conversation_history = []
     # if config["use_hints"] and evidence:
@@ -105,6 +105,7 @@ def build_payload(question: str, evidence: str, config: dict, db_id: str = None)
     
     payload = {
         "query": query_with_hints,
+        "use_qdrant_hints": use_qdrant_hints,
         # "conversation_history": conversation_history,  # Commented out
     }
     if config.get("provider"):
