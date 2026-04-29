@@ -1,0 +1,46 @@
+{
+  "overall": {
+    "count": 10,
+    "execution_match_rate": 0.8,
+    "exact_match_rate": 0.2,
+    "avg_f1": 0.93,
+    "avg_precision": 0.9167,
+    "avg_recall": 0.95,
+    "agent_error_rate": 0.0,
+    "pred_sql_error_rate": 0.0,
+    "latency_p50_ms": 6400.0,
+    "latency_p95_ms": 9470.0,
+    "latency_p99_ms": 9470.0,
+    "total_input_tokens": 240,
+    "total_output_tokens": 230,
+    "total_cost_usd": 0.0042,
+    "avg_cost_usd_per_question": 0.000417
+  },
+  "by_difficulty": {
+    "unknown": {
+      "count": 10,
+      "execution_match_rate": 0.8,
+      "exact_match_rate": 0.2,
+      "avg_f1": 0.93,
+      "avg_precision": 0.9167,
+      "avg_recall": 0.95,
+      "agent_error_rate": 0.0,
+      "pred_sql_error_rate": 0.0,
+      "latency_p50_ms": 6400.0,
+      "latency_p95_ms": 9470.0,
+      "latency_p99_ms": 9470.0,
+      "total_input_tokens": 240,
+      "total_output_tokens": 230,
+      "total_cost_usd": 0.0042,
+      "avg_cost_usd_per_question": 0.000417
+    }
+  },
+  "worst_20_dbs": {
+    "concert_singer": {
+      "count": 10,
+      "execution_match_rate": 0.8,
+      "avg_f1": 0.93
+    }
+  },
+  "total_questions": 10
+}

@@ -1,2 +1,14 @@
 question_id,db_id,difficulty,question,evidence,gold_sql,predicted_sql,execution_match,exact_match,f1,precision,recall,gold_row_count,pred_row_count,gold_error,pred_error,agent_error,latency_ms,input_tokens,output_tokens,cost_usd,provider,model_name,hints_used
-0,california_schools,simple,What is the highest eligible free rate for K-12 students in the schools in Alameda County?,Eligible free rate for K-12 = `Free Meal Count (K-12)` / `Enrollment (K-12)`,SELECT `Free Meal Count (K-12)` / `Enrollment (K-12)` FROM frpm WHERE `County Name` = 'Alameda' ORDER BY (CAST(`Free Meal Count (K-12)` AS REAL) / `Enrollment (K-12)`) DESC LIMIT 1,"SELECT MAX(CAST(""Free Meal Count (K-12)"" AS REAL) / ""Enrollment (K-12)"") AS highest_eligible_free_rate FROM frpm WHERE ""County Name"" = 'Alameda' AND ""Enrollment (K-12)"" > 0;",True,False,1.0,1.0,1.0,1,1,,,,26220.0,60,48,0.0009,XAI,grok-4-1-fast-non-reasoning,True
+0,california_schools,simple,What is the highest eligible free rate for K-12 students in the schools in Alameda County?,Eligible free rate for K-12 = `Free Meal Count (K-12)` / `Enrollment (K-12)`,SELECT `Free Meal Count (K-12)` / `Enrollment (K-12)` FROM frpm WHERE `County Name` = 'Alameda' ORDER BY (CAST(`Free Meal Count (K-12)` AS REAL) / `Enrollment (K-12)`) DESC LIMIT 1,"SELECT MAX(CAST(""Free Meal Count (K-12)"" AS REAL) / ""Enrollment (K-12)"") AS highest_eligible_free_rate
+FROM frpm
+WHERE ""County Name"" = 'Alameda'
+AND ""Enrollment (K-12)"" IS NOT NULL
+AND ""Free Meal Count (K-12)"" IS NOT NULL
+AND ""Enrollment (K-12)"" > 0;
+
+## Explanation
+- **Table Selection**: Used the `frpm` table as it contains the required columns `""Free Meal Count (K-12)""` and `""Enrollment (K-12)""`, confirmed via schema inspection.
+- **Filter**: Applied `WHERE ""County Name"" = 'Alameda'` after verifying the exact value with sample data.
+- **Rate Calculation**: Computed `CAST(""Free Meal Count (K-12)"" AS REAL) / ""Enrollment (K-12)""` to ensure floating-point division, matching the hint.
+- **NULL Handling**: Excluded rows where denominator or numerator is NULL or zero to avoid invalid rates.
+- **Aggregation**: Used `MAX()` to find the highest rate across qualifying schools.",False,False,0.0,0.0,0.0,1,0,,You can only execute one statement at a time.,,11160.0,60,258,0.00405,XAI,grok-4-1-fast-non-reasoning,True

@@ -187,20 +187,39 @@ COST_PER_1M_OUTPUT = 15.0
 
 ## Supported Datasets
 
-### BIRD-Bench
+### BIRD (Default)
+- **Source**: [BIRD-Bench](https://bird-bench.oss-cn-beijing.aliyuncs.com/)
+- **Size**: ~33GB (dev set)
+- **Format**: SQLite databases with natural language questions
+- **Auto-download**: Yes (first run)
 
-Downloaded automatically from the official BIRD repository on first run (~33.4GB).
-Source: https://bird-bench.oss-cn-beijing.aliyuncs.com/dev.zip
+### Spider
+- **Source**: [Spider Dataset](https://yale-lily.github.io/spider)
+- **Size**: ~1GB (dev set)
+- **Format**: SQLite databases with natural language questions
+- **Auto-download**: Manual (see below)
 
-The data is downloaded to `./bird_data/` (configurable via `BIRD_DATA_DIR` env var). This directory is gitignored to avoid committing large files.
+#### Spider Setup
 
-- **Questions**: 12,751 across 95 databases
-- **Difficulty levels**: simple, moderate, challenging
-- **Evidence**: Includes domain hints in the `evidence` field
+Spider dataset requires manual download:
 
-### Spider 2.0
+1. **Download**: Visit https://drive.google.com/file/d/1403EGqzIDoHMdQF4c9Bkyl7dZLZ5Wt6J
+2. **Extract**: Download and extract `spider.zip` to your data directory
+3. **Structure**: Ensure the extracted directory structure is:
 
-Placeholder implementation for Spider 2.0. Update the URL and data structure in `datasets/spider.py` when the official Spider 2.0 dataset is available.
+```bash
+bird_data/
+  spider/
+    database/
+      academic/
+        academic.sqlite
+      aircraft/
+        aircraft.sqlite
+      ... (more database directories)
+    dev.json
+    train.json
+    tables.json
+```
 
 The data will be downloaded to `./spider_data/` (configurable via data directory settings). This directory is gitignored.
 

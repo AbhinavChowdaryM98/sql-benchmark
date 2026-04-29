@@ -1,0 +1,21 @@
+question_id,db_id,difficulty,question,evidence,gold_sql,predicted_sql,execution_match,exact_match,f1,precision,recall,gold_row_count,pred_row_count,gold_error,pred_error,agent_error,latency_ms,input_tokens,output_tokens,cost_usd,provider,model_name,hints_used
+,concert_singer,unknown,How many singers do we have?,,SELECT count(*) FROM singer,SELECT COUNT(*) FROM singer,True,True,1.0,1.0,1.0,1,1,,,,6260.0,12,8,0.000156,XAI,grok-4-1-fast-non-reasoning,False
+,concert_singer,unknown,"What are the names, countries, and ages for every singer in descending order of age?",,"SELECT name ,  country ,  age FROM singer ORDER BY age DESC","SELECT ""Name"", ""Country"", ""Age"" FROM singer ORDER BY ""Age"" DESC",True,False,1.0,1.0,1.0,6,6,,,,5350.0,30,20,0.00039,XAI,grok-4-1-fast-non-reasoning,False
+,concert_singer,unknown,"Show name, country, age for all singers ordered by age from the oldest to the youngest.",,"SELECT name ,  country ,  age FROM singer ORDER BY age DESC","SELECT ""Name"", ""Country"", ""Age"" FROM singer ORDER BY ""Age"" DESC;",True,False,1.0,1.0,1.0,6,6,,,,4440.0,32,20,0.000396,XAI,grok-4-1-fast-non-reasoning,False
+,concert_singer,unknown,What is the total number of singers?,,SELECT count(*) FROM singer,SELECT COUNT(*) FROM singer,True,True,1.0,1.0,1.0,1,1,,,,2190.0,14,8,0.000162,XAI,grok-4-1-fast-non-reasoning,False
+,concert_singer,unknown,"What is the average, minimum, and maximum age for all French singers?",,"SELECT avg(age) ,  min(age) ,  max(age) FROM singer WHERE country  =  'France'","SELECT 
+    AVG(""Age"") AS average_age,
+    MIN(""Age"") AS min_age,
+    MAX(""Age"") AS max_age
+FROM singer 
+WHERE ""Country"" = 'France' AND ""Age"" IS NOT NULL;",True,False,1.0,1.0,1.0,1,1,,,,6080.0,24,42,0.000702,XAI,grok-4-1-fast-non-reasoning,False
+,concert_singer,unknown,"What is the average, minimum, and maximum age of all singers from France?",,"SELECT avg(age) ,  min(age) ,  max(age) FROM singer WHERE country  =  'France'","SELECT 
+    AVG(""Age"") AS average_age,
+    MIN(""Age"") AS min_age,
+    MAX(""Age"") AS max_age
+FROM singer 
+WHERE ""Country"" = 'France' AND ""Age"" IS NOT NULL;",True,False,1.0,1.0,1.0,1,1,,,,8150.0,26,42,0.000708,XAI,grok-4-1-fast-non-reasoning,False
+,concert_singer,unknown,Show the name and the release year of the song by the youngest singer.,,"SELECT song_name ,  song_release_year FROM singer ORDER BY age LIMIT 1","SELECT ""Name"", ""Song_release_year"" FROM singer ORDER BY ""Age"" ASC LIMIT 1",False,False,0.5,0.5,0.5,1,1,,,,9120.0,28,22,0.000414,XAI,grok-4-1-fast-non-reasoning,False
+,concert_singer,unknown,What are the names and release years for all the songs of the youngest singer?,,"SELECT song_name ,  song_release_year FROM singer ORDER BY age LIMIT 1","SELECT ""Name"", ""Song_Name"", ""Song_release_year"" FROM singer WHERE ""Age"" = (SELECT MIN(""Age"") FROM singer)",False,False,0.8,0.6667,1.0,1,1,,,,9470.0,30,26,0.00048,XAI,grok-4-1-fast-non-reasoning,False
+,concert_singer,unknown,What are all distinct countries where singers above age 20 are from?,,SELECT DISTINCT country FROM singer WHERE age  >  20,"SELECT DISTINCT ""Country"" FROM singer WHERE ""Age"" > 20;",True,False,1.0,1.0,1.0,3,3,,,,7490.0,24,18,0.000342,XAI,grok-4-1-fast-non-reasoning,False
+,concert_singer,unknown,What are  the different countries with singers above age 20?,,SELECT DISTINCT country FROM singer WHERE age  >  20,"SELECT DISTINCT ""Country"" FROM singer WHERE ""Age"" > 20 ORDER BY ""Country"";",True,False,1.0,1.0,1.0,3,3,,,,6400.0,20,24,0.00042,XAI,grok-4-1-fast-non-reasoning,False

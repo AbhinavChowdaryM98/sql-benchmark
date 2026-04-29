@@ -1,45 +1,45 @@
 {
   "overall": {
     "count": 1,
-    "execution_match_rate": 1.0,
+    "execution_match_rate": 0.0,
     "exact_match_rate": 0.0,
-    "avg_f1": 1.0,
-    "avg_precision": 1.0,
-    "avg_recall": 1.0,
+    "avg_f1": 0.0,
+    "avg_precision": 0.0,
+    "avg_recall": 0.0,
     "agent_error_rate": 0.0,
-    "pred_sql_error_rate": 0.0,
-    "latency_p50_ms": 26220.0,
-    "latency_p95_ms": 26220.0,
-    "latency_p99_ms": 26220.0,
+    "pred_sql_error_rate": 1.0,
+    "latency_p50_ms": 11160.0,
+    "latency_p95_ms": 11160.0,
+    "latency_p99_ms": 11160.0,
     "total_input_tokens": 60,
-    "total_output_tokens": 48,
-    "total_cost_usd": 0.0009,
-    "avg_cost_usd_per_question": 0.0009
+    "total_output_tokens": 258,
+    "total_cost_usd": 0.004,
+    "avg_cost_usd_per_question": 0.00405
   },
   "by_difficulty": {
     "simple": {
       "count": 1,
-      "execution_match_rate": 1.0,
+      "execution_match_rate": 0.0,
       "exact_match_rate": 0.0,
-      "avg_f1": 1.0,
-      "avg_precision": 1.0,
-      "avg_recall": 1.0,
+      "avg_f1": 0.0,
+      "avg_precision": 0.0,
+      "avg_recall": 0.0,
       "agent_error_rate": 0.0,
-      "pred_sql_error_rate": 0.0,
-      "latency_p50_ms": 26220.0,
-      "latency_p95_ms": 26220.0,
-      "latency_p99_ms": 26220.0,
+      "pred_sql_error_rate": 1.0,
+      "latency_p50_ms": 11160.0,
+      "latency_p95_ms": 11160.0,
+      "latency_p99_ms": 11160.0,
       "total_input_tokens": 60,
-      "total_output_tokens": 48,
-      "total_cost_usd": 0.0009,
-      "avg_cost_usd_per_question": 0.0009
+      "total_output_tokens": 258,
+      "total_cost_usd": 0.004,
+      "avg_cost_usd_per_question": 0.00405
     }
   },
   "worst_20_dbs": {
     "california_schools": {
       "count": 1,
-      "execution_match_rate": 1.0,
-      "avg_f1": 1.0
+      "execution_match_rate": 0.0,
+      "avg_f1": 0.0
     }
   },
   "total_questions": 1

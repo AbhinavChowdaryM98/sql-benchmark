@@ -16,15 +16,17 @@ from .base import DatasetLoader
 
 
 class SpiderDatasetLoader(DatasetLoader):
-    """Dataset loader for Spider 2.0."""
+    """Dataset loader for Spider 1.0."""
 
-    # Placeholder URL - update with actual Spider 2.0 URL when available
-    SPIDER_DEV_URL = "https://github.com/taoyds/spider/archive/refs/heads/master.zip"
+    # Official Spider dataset Google Drive URL
+    SPIDER_DATASET_URL = "https://drive.google.com/uc?export=download&id=1403EGqzIDoHMdQF4c9Bkyl7dZLZ5Wt6J"
     DIFFICULTY_LEVELS = ["easy", "medium", "hard", "extra hard"]
 
     def download(self, data_dir: Path, force: bool = False) -> Path:
         """
-        Download and extract Spider 2.0 dataset.
+        Download and extract Spider 1.0 dataset with databases.
+        
+        Note: Google Drive downloads require manual intervention.
         
         Args:
             data_dir: Directory to store the dataset
@@ -34,30 +36,36 @@ class SpiderDatasetLoader(DatasetLoader):
             Path to the extracted dataset directory
         """
         data_dir.mkdir(parents=True, exist_ok=True)
-        zip_path = data_dir / "spider.zip"
+        spider_dir = data_dir / "spider"
         
-        # Check for existing spider directory
-        spider_dirs = [d for d in data_dir.iterdir() if d.is_dir() and "spider" in d.name.lower()]
-        if spider_dirs and not force:
-            spider_dir = spider_dirs[0]
+        # Check if spider directory already exists and has databases
+        if spider_dir.exists() and (spider_dir / "database").exists() and not force:
             print(f"[spider] Spider dataset already at {spider_dir}, skipping download.")
             return spider_dir
 
-        print(f"[spider] Downloading Spider 2.0 dataset...")
-        print(f"[spider] Note: This is a placeholder URL. Update SPIDER_DEV_URL with the actual Spider 2.0 URL.")
-        urllib.request.urlretrieve(self.SPIDER_DEV_URL, zip_path)
-        print(f"[spider] Extracting...")
-        with zipfile.ZipFile(zip_path, "r") as zf:
-            zf.extractall(data_dir)
+        print(f"[spider] Spider 1.0 dataset requires manual download:")
+        print(f"[spider] 1. Visit: https://drive.google.com/file/d/1403EGqzIDoHMdQF4c9Bkyl7dZLZ5Wt6J")
+        print(f"[spider] 2. Download the 'spider.zip' file")
+        print(f"[spider] 3. Extract it to: {data_dir}")
+        print(f"[spider] 4. Ensure the extracted directory is named 'spider'")
+        print(f"[spider]")
+        print(f"[spider] Expected structure after extraction:")
+        print(f"[spider] {data_dir}")
+        print(f"[spider]   spider/")
+        print(f"[spider]     database/")
+        print(f"[spider]       academic/")
+        print(f"[spider]         academic.sqlite")
+        print(f"[spider]       aircraft/")
+        print(f"[spider]         aircraft.sqlite")
+        print(f"[spider]       ... (more database directories)")
+        print(f"[spider]     dev.json")
+        print(f"[spider]     train.json")
+        print(f"[spider]     tables.json")
         
-        # Find the extracted spider directory
-        spider_dirs = [d for d in data_dir.iterdir() if d.is_dir() and "spider" in d.name.lower()]
-        if not spider_dirs:
-            raise FileNotFoundError("Could not find spider directory after extraction")
-        
-        spider_dir = spider_dirs[0]
-        print(f"[spider] Done. Data at {spider_dir}")
-        return spider_dir
+        raise FileNotFoundError(
+            f"Spider dataset not found. Please download manually from the URL above "
+            f"and extract to {spider_dir}"
+        )
 
     def load_questions(self, dev_dir: Path) -> List[Dict]:
         """
@@ -119,9 +127,9 @@ class SpiderDatasetLoader(DatasetLoader):
 
     def get_db_path(self, dev_dir: Path, db_id: str) -> Path:
         """
-        Resolve SQLite path for a given db_id.
+        Resolve SQLite path for a given db_id in Spider dataset.
         
-        Spider typically stores databases in a 'database' or 'databases' directory.
+        Spider stores databases in database/{db_id}/{db_id}.sqlite structure.
         
         Args:
             dev_dir: Path to the dataset directory
@@ -130,27 +138,29 @@ class SpiderDatasetLoader(DatasetLoader):
         Returns:
             Path to the SQLite database file
         """
-        # Try common Spider database directory structures
-        db_dirs = [
-            dev_dir / "database",
-            dev_dir / "databases",
-            dev_dir / "spider" / "database",
-            dev_dir / "data" / "database",
-        ]
-        
-        for db_dir in db_dirs:
-            if db_dir.exists():
-                candidates = list(db_dir.glob(f"{db_id}.sqlite")) + \
-                             list(db_dir.glob(f"{db_id}/{db_id}.sqlite"))
-                if candidates:
-                    return candidates[0]
+        # Spider stores databases in database/{db_id}/{db_id}.sqlite
+        db_dir = dev_dir / "database"
+        if db_dir.exists():
+            # Try subdirectory structure: database/{db_id}/{db_id}.sqlite
+            sub_dir = db_dir / db_id
+            db_path = sub_dir / f"{db_id}.sqlite"
+            if db_path.exists():
+                return db_path
+            
+            # Try direct file match: database/{db_id}.sqlite
+            direct_path = db_dir / f"{db_id}.sqlite"
+            if direct_path.exists():
+                return direct_path
         
         # Fallback to recursive search
-        candidates = list(dev_dir.glob(f"**/{db_id}.sqlite")) + \
-                     list(dev_dir.glob(f"**/{db_id}/{db_id}.sqlite"))
-        if not candidates:
-            raise FileNotFoundError(f"SQLite DB not found for db_id={db_id} under {dev_dir}")
-        return candidates[0]
+        candidates = list(dev_dir.glob(f"**/{db_id}.sqlite"))
+        if candidates:
+            return candidates[0]
+        
+        raise FileNotFoundError(
+            f"Spider database not found for db_id='{db_id}'. "
+            f"Expected at: {db_dir / f'{db_id}/{db_id}.sqlite'} or {db_dir / f'{db_id}.sqlite'}"
+        )
 
     def format_hints(self, question: str, evidence: str) -> str:
         """
