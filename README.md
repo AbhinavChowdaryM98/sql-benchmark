@@ -24,6 +24,8 @@ pip install requests   # only stdlib used otherwise
 
 No other dependencies. Uses Python's built-in `sqlite3`, `urllib`, `csv`, `concurrent.futures`.
 
+**Note**: Dataset data (BIRD, Spider, etc.) is downloaded automatically on first run (~33GB for BIRD). The data directories are excluded from git via `.gitignore` to avoid committing large files.
+
 ---
 
 ## Agent API Contract
@@ -208,6 +210,8 @@ COST_PER_1M_OUTPUT = 15.0
 Downloaded automatically from the official BIRD repository on first run (~33.4GB).
 Source: https://bird-bench.oss-cn-beijing.aliyuncs.com/dev.zip
 
+The data is downloaded to `./bird_data/` (configurable via `BIRD_DATA_DIR` env var). This directory is gitignored to avoid committing large files.
+
 - **Questions**: 12,751 across 95 databases
 - **Difficulty levels**: simple, moderate, challenging
 - **Evidence**: Includes domain hints in the `evidence` field
@@ -215,6 +219,8 @@ Source: https://bird-bench.oss-cn-beijing.aliyuncs.com/dev.zip
 ### Spider 2.0
 
 Placeholder implementation for Spider 2.0. Update the URL and data structure in `datasets/spider.py` when the official Spider 2.0 dataset is available.
+
+The data will be downloaded to `./spider_data/` (configurable via data directory settings). This directory is gitignored.
 
 - **Questions**: TBD
 - **Difficulty levels**: easy, medium, hard, extra hard
