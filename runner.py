@@ -49,9 +49,12 @@ from pathlib import Path
 import urllib.request
 import urllib.error
 
-from datasets import get_dataset_loader
-from downloader import DEFAULT_DATA_DIR
+from dotenv import load_dotenv
+load_dotenv()
+
+from downloader import load_questions, get_db_path, download_bird, DEFAULT_DATA_DIR
 from evaluator import evaluate, clean_sql
+from datasets import get_dataset_loader
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -63,10 +66,11 @@ DEFAULT_CONFIG = {
     "output_csv": os.getenv("OUTPUT_CSV", "./results/benchmark_results.csv"),
     "data_dir": Path(os.getenv("BIRD_DATA_DIR", str(DEFAULT_DATA_DIR))),
     "use_hints": os.getenv("USE_HINTS", "true").lower() == "true",
+    "use_qdrant_hints": os.getenv("USE_QDRANT_HINTS", "false").lower() == "true",
     "filter_db_ids": [],
     "filter_difficulties": [],
-    "max_questions": 89,
-    "request_timeout": 60,
+    "max_questions": int(os.getenv("MAX_QUESTIONS", "-1")),
+    "request_timeout": int(os.getenv("REQUEST_TIMEOUT", "60")),
     "dataset": os.getenv("DATASET", "bird"),
 }
 
@@ -89,16 +93,16 @@ HINT_TEMPLATE = (
 
 # ── Agent call ────────────────────────────────────────────────────────────────
 
-def build_payload(question: str, evidence: str, config: dict, db_id: str = None, use_qdrant_hints: bool = False, dataset_loader=None) -> dict:
+def build_payload(question: str, evidence: str, config: dict, db_id: str = None, dataset_loader=None) -> dict:
     # Use dataset-specific hint formatting
     if dataset_loader and config["use_hints"] and evidence:
         query_with_hints = dataset_loader.format_hints(question, evidence)
     else:
         query_with_hints = question
-    
+
     payload = {
         "query": query_with_hints,
-        "use_qdrant_hints": use_qdrant_hints,
+        "use_qdrant_hints": config.get("use_qdrant_hints", False),
     }
     if config.get("provider"):
         payload["provider"] = config["provider"]

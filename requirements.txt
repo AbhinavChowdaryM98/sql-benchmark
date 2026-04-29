@@ -24,3 +24,5 @@
 # Documentation (optional)
 # sphinx>=5.0.0
 # sphinx-rtd-theme>=1.0.0
+
+python-dotenv>=1.0.0

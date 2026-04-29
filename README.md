@@ -19,12 +19,19 @@ Results are broken down by difficulty tier (`simple` / `moderate` / `challenging
 ## Setup
 
 ```bash
-pip install requests   # only stdlib used otherwise
+pip install -r requirements.txt
+```
+
+Copy `.env.example` to `.env` and configure your settings:
+
+```bash
+cp .env.example .env
+# Edit .env with your configuration
 ```
 
 No other dependencies. Uses Python's built-in `sqlite3`, `urllib`, `csv`, `concurrent.futures`.
 
-**Note**: Dataset data (BIRD, Spider, etc.) is downloaded automatically on first run (~33GB for BIRD). The data directories are excluded from git via `.gitignore` to avoid committing large files.
+**Note**: The BIRD dataset (~33GB) is downloaded automatically on first run when you execute `python main.py run`. The data is stored in `./bird_data/` (configurable via `BIRD_DATA_DIR` env var) and is gitignored to avoid committing large files.
 
 ---
 
@@ -73,62 +80,29 @@ Response:
 
 ## Running
 
+Configure your settings in `.env` file (see `.env.example` for reference):
+
 ```bash
-# Run BIRD benchmark (default)
-python main.py run --dataset bird
-
-# Run Spider benchmark
-python main.py run --dataset spider
-
-# With custom agent URL
-python main.py run --agent-url http://localhost:4747/sql-query
-
-# With more concurrency
-python main.py run --workers 8
-
-# With hints enabled (default)
-python main.py run --hints
-
-# Without hints
+# Run benchmark (uses settings from .env)
 python main.py run
+
+# Run with hints
+python main.py run --hints
 
 # Compare hints vs no-hints
 python main.py run --compare
 
-# Limited questions
-python main.py run --max-questions 100
-
-# Filter by difficulty (dataset-specific)
-python main.py run --difficulties simple moderate
-
-# Specific DBs
-python main.py run --dbs california_schools debit_card_specialties
-
-# Custom output path
-python main.py run --output ./results/my_benchmark
+# Override specific settings via CLI (CLI args take precedence over .env)
+python main.py run --max-questions 100 --difficulties simple
 
 # Recompute metrics from existing results CSV
-python main.py metrics --csv ./results/benchmark_bird_no_hints.csv
+python main.py metrics --csv ./results/benchmark_results.csv
 
 # Compare two existing runs
-python main.py compare --no-hints-csv ./results/benchmark_bird_no_hints.csv --hints-csv ./results/benchmark_bird_hints.csv
+python main.py compare --no-hints-csv ./results/no_hints.csv --hints-csv ./results/hints.csv
 ```
 
-### Environment Variables
-
-```bash
-# Set dataset via environment variable
-DATASET=spider python main.py run
-
-# Set agent URL
-AGENT_URL=http://localhost:4747/sql-query python main.py run
-
-# Set workers
-WORKERS=8 python main.py run
-
-# Enable/disable hints
-USE_HINTS=false python main.py run
-```
+**Configuration priority**: CLI args → `.env` file → defaults
 
 ---
 
@@ -172,7 +146,7 @@ BY DIFFICULTY
 
 ## Configuration
 
-All config via env vars or CLI args:
+All config via `.env` file or CLI args. See `.env.example` for all available options:
 
 | Env var | Default | Description |
 |---|---|---|
@@ -181,10 +155,14 @@ All config via env vars or CLI args:
 | `AGENT_API_KEY` | `` | Bearer token (optional) |
 | `AGENT_PROVIDER` | `XAI` | Model provider |
 | `WORKERS` | `4` | Concurrent requests |
-| `OUTPUT_CSV` | `./results/benchmark_results.csv` | Results output |
-| `BIRD_DATA_DIR` | `./bird_data` | Where to download dataset DBs |
 | `USE_HINTS` | `true` | Include evidence hints in queries |
+| `USE_QDRANT_Hints` | `false` | Use Qdrant-based hints |
 | `MAX_QUESTIONS` | `-1` | Limit number of questions (-1 = all) |
+| `REQUEST_TIMEOUT` | `60` | Request timeout in seconds |
+| `DIFFICULTIES` | `` | Difficulty filter (space-separated, e.g., "simple moderate") |
+| `DBS` | `` | Database filter (space-separated, e.g., "california_schools financial") |
+| `BIRD_DATA_DIR` | `./bird_data` | Where to download dataset DBs |
+| `OUTPUT` | `./results/benchmark` | Base path for output CSVs |
 
 ### Tuning execution match threshold
 

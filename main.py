@@ -27,6 +27,7 @@ from datasets import get_dataset_loader
 
 
 def _build_config(args, use_hints: bool, output_suffix: str) -> dict:
+    import os
     config = dict(DEFAULT_CONFIG)
     if args.agent_url:
         config["agent_url"] = args.agent_url
@@ -36,15 +37,19 @@ def _build_config(args, use_hints: bool, output_suffix: str) -> dict:
         config["max_questions"] = args.max_questions
     if getattr(args, "difficulties", None):
         config["filter_difficulties"] = args.difficulties
+    elif os.getenv("DIFFICULTIES"):
+        config["filter_difficulties"] = os.getenv("DIFFICULTIES").split()
     if getattr(args, "dbs", None):
         config["filter_db_ids"] = args.dbs
+    elif os.getenv("DBS"):
+        config["filter_db_ids"] = os.getenv("DBS").split()
     if getattr(args, "data_dir", None):
         config["data_dir"] = Path(args.data_dir)
     if getattr(args, "dataset", None):
         config["dataset"] = args.dataset
 
     config["use_hints"] = use_hints
-    base = getattr(args, "output", None) or "./results/benchmark"
+    base = getattr(args, "output", None) or os.getenv("OUTPUT", "./results/benchmark")
     base = base.rstrip(".csv")
     dataset_name = config.get("dataset", "bird")
     config["output_csv"] = f"{base}_{dataset_name}_{output_suffix}.csv"
@@ -62,8 +67,12 @@ def _run_single(args, use_hints: bool):
 
 
 def cmd_run(args):
+    import os
     compare = getattr(args, "compare", False)
     hints_only = getattr(args, "hints", False)
+
+    # Get default hints setting from env var
+    use_hints_default = os.getenv("USE_HINTS", "true").lower() == "true"
 
     if compare:
         metrics_no, csv_no = _run_single(args, use_hints=False)
@@ -72,7 +81,7 @@ def cmd_run(args):
     elif hints_only:
         _run_single(args, use_hints=True)
     else:
-        _run_single(args, use_hints=False)
+        _run_single(args, use_hints=use_hints_default)
 
 
 def cmd_metrics(args):

@@ -1,0 +1,58 @@
+question_id,db_id,difficulty,question,evidence,gold_sql,predicted_sql,execution_match,exact_match,f1,precision,recall,gold_row_count,pred_row_count,gold_error,pred_error,agent_error,latency_ms,input_tokens,output_tokens,cost_usd,provider,model_name,hints_used
+0,california_schools,simple,What is the highest eligible free rate for K-12 students in the schools in Alameda County?,Eligible free rate for K-12 = `Free Meal Count (K-12)` / `Enrollment (K-12)`,SELECT `Free Meal Count (K-12)` / `Enrollment (K-12)` FROM frpm WHERE `County Name` = 'Alameda' ORDER BY (CAST(`Free Meal Count (K-12)` AS REAL) / `Enrollment (K-12)`) DESC LIMIT 1,"SELECT MAX(CAST(""Free Meal Count (K-12)"" AS REAL) / ""Enrollment (K-12)"") AS highest_eligible_free_rate FROM frpm WHERE ""County Name"" = 'Alameda' AND ""Enrollment (K-12)"" > 0",True,False,1.0,1.0,1.0,1,1,,,,6050.0,60,48,0.0009,XAI,grok-4-1-fast-non-reasoning,True
+3,california_schools,simple,What is the unabbreviated mailing street address of the school with the highest FRPM count for K-12 students?,,SELECT T2.MailStreet FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode ORDER BY T1.`FRPM Count (K-12)` DESC LIMIT 1,"SELECT s.MailStreet FROM schools s INNER JOIN frpm f ON s.CDSCode = f.CDSCode WHERE f.""FRPM Count (K-12)"" IS NOT NULL ORDER BY f.""FRPM Count (K-12)"" DESC LIMIT 1",True,False,1.0,1.0,1.0,1,1,,,,6390.0,36,56,0.000948,XAI,grok-4-1-fast-non-reasoning,False
+2,california_schools,simple,Please list the zip code of all the charter schools in Fresno County Office of Education.,Charter schools refers to `Charter School (Y/N)` = 1 in the table fprm,SELECT T2.Zip FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`District Name` = 'Fresno County Office of Education' AND T1.`Charter School (Y/N)` = 1,"SELECT DISTINCT s.""Zip"" FROM frpm f JOIN schools s ON f.""CDSCode"" = s.""CDSCode"" WHERE f.""Charter School (Y/N)"" = 1 AND f.""County Name"" = 'Fresno County Office of Education' AND s.""Zip"" IS NOT NULL ORDER BY s.""Zip"";",False,False,0.0,0.0,0.0,5,0,,,,12780.0,60,72,0.00126,XAI,grok-4-1-fast-non-reasoning,True
+1,california_schools,moderate,Please list the lowest three eligible free rates for students aged 5-17 in continuation schools.,Eligible free rates for students aged 5-17 = `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)`,SELECT `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` FROM frpm WHERE `Educational Option Type` = 'Continuation School' AND `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` IS NOT NULL ORDER BY `Free Meal Count (Ages 5-17)` / `Enrollment (Ages 5-17)` ASC LIMIT 3,"SELECT ""School Name"", ""County Name"", ""District Name"", 
+       CAST(""Free Meal Count (Ages 5-17)"" AS REAL) / ""Enrollment (Ages 5-17)"" AS eligible_free_rate
+FROM frpm 
+WHERE ""School Type"" = 'Continuation High Schools'
+  AND ""Enrollment (Ages 5-17)"" > 0
+  AND ""Free Meal Count (Ages 5-17)"" IS NOT NULL
+ORDER BY eligible_free_rate ASC
+LIMIT 3",False,False,0.4,0.25,1.0,3,3,,,,8010.0,66,100,0.001698,XAI,grok-4-1-fast-non-reasoning,True
+4,california_schools,moderate,Please list the phone numbers of the direct charter-funded schools that are opened after 2000/1/1.,Charter schools refers to `Charter School (Y/N)` = 1 in the frpm,SELECT T2.Phone FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T1.`Charter Funding Type` = 'Directly funded' AND T1.`Charter School (Y/N)` = 1 AND T2.OpenDate > '2000-01-01',"SELECT s.""Phone"" 
+FROM schools s
+JOIN frpm f ON s.""CDSCode"" = f.""CDSCode""
+WHERE s.OpenDate > '2000-01-01'
+AND f.""Charter School (Y/N)"" = 1
+AND f.""Charter Funding Type"" = 'Directly funded';",True,False,1.0,1.0,1.0,751,751,,,,21090.0,56,58,0.001038,XAI,grok-4-1-fast-non-reasoning,True
+5,california_schools,simple,How many schools with an average score in Math greater than 400 in the SAT test are exclusively virtual?,Exclusively virtual refers to Virtual = 'F',SELECT COUNT(DISTINCT T2.School) FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.Virtual = 'F' AND T1.AvgScrMath > 400,"SELECT COUNT(DISTINCT s.CDSCode)
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE s.Virtual = 'F'
+AND sat.""AvgScrMath"" > 400",True,False,1.0,1.0,1.0,1,1,,,,9790.0,54,42,0.000792,XAI,grok-4-1-fast-non-reasoning,True
+6,california_schools,simple,"Among the schools with the SAT test takers of over 500, please list the schools that are magnet schools or offer a magnet program.",Magnet schools or offer a magnet program means that Magnet = 1,SELECT T2.School FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode WHERE T2.Magnet = 1 AND T1.NumTstTakr > 500,"SELECT s.""School"", s.""CDSCode""
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE sat.""NumTstTakr"" > 500
+AND s.""Magnet"" = 1
+ORDER BY s.""School"";",False,False,0.6667,0.5,1.0,3,3,,,,8910.0,74,48,0.000942,XAI,grok-4-1-fast-non-reasoning,True
+7,california_schools,simple,What is the phone number of the school that has the highest number of test takers with an SAT score of over 1500?,,SELECT T2.Phone FROM satscores AS T1 INNER JOIN schools AS T2 ON T1.cds = T2.CDSCode ORDER BY T1.NumGE1500 DESC LIMIT 1,"SELECT s.Phone 
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE sat.""NumGE1500"" IS NOT NULL
+GROUP BY s.""CDSCode"", s.Phone
+HAVING sat.""NumGE1500"" = (
+    SELECT MAX(""NumGE1500"") 
+    FROM satscores 
+    WHERE ""NumGE1500"" IS NOT NULL
+)
+LIMIT 1;",True,False,1.0,1.0,1.0,1,1,,,,10350.0,46,74,0.001248,XAI,grok-4-1-fast-non-reasoning,False
+8,california_schools,simple,What is the number of SAT test takers of the schools with the highest FRPM count for K-12 students?,,SELECT NumTstTakr FROM satscores WHERE cds = ( SELECT CDSCode FROM frpm ORDER BY `FRPM Count (K-12)` DESC LIMIT 1 ),"SELECT SUM(s.NumTstTakr) 
+FROM satscores s 
+WHERE s.cds IN (
+    SELECT f.CDSCode 
+    FROM frpm f 
+    WHERE f.""FRPM Count (K-12)"" = (
+        SELECT MAX(f2.""FRPM Count (K-12)"") 
+        FROM frpm f2 
+        WHERE f2.""FRPM Count (K-12)"" IS NOT NULL
+    )
+    AND f.""FRPM Count (K-12)"" IS NOT NULL
+) 
+AND s.NumTstTakr IS NOT NULL;",True,False,1.0,1.0,1.0,1,1,,,,10790.0,38,96,0.001554,XAI,grok-4-1-fast-non-reasoning,False
+9,california_schools,simple,"Among the schools with the average score in Math over 560 in the SAT test, how many schools are directly charter-funded?",,SELECT COUNT(T2.`School Code`) FROM satscores AS T1 INNER JOIN frpm AS T2 ON T1.cds = T2.CDSCode WHERE T1.AvgScrMath > 560 AND T2.`Charter Funding Type` = 'Directly funded',"SELECT COUNT(DISTINCT s.""CDSCode"")
+FROM schools s
+JOIN satscores sat ON s.""CDSCode"" = sat.cds
+WHERE sat.""AvgScrMath"" > 560
+AND s.""FundingType"" = 'Directly funded';",True,False,1.0,1.0,1.0,1,1,,,,9850.0,42,44,0.000786,XAI,grok-4-1-fast-non-reasoning,False
