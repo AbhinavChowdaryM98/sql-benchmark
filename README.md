@@ -24,6 +24,8 @@ pip install requests   # only stdlib used otherwise
 
 No other dependencies. Uses Python's built-in `sqlite3`, `urllib`, `csv`, `concurrent.futures`.
 
+**Note**: The BIRD dataset (~33GB) is downloaded automatically on first run when you execute `python runner.py`. The data is stored in `./bird_data/` (configurable via `BIRD_DATA_DIR` env var) and is gitignored to avoid committing large files.
+
 ---
 
 ## Agent API Contract
