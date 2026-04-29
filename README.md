@@ -46,6 +46,8 @@ Content-Type: application/json
 {
   "query": "How many employees are in the sales department?",
   "db_id": "employee_hire_evaluation",
+  "db_type": "sqlite",
+  "db_path": "C:\\Users\\KSPL\\Documents\\Abhinav\\sql-benchmark\\bird_data\\dev_20240627\\dev_databases\\employee_hire_evaluation\\employee_hire_evaluation.sqlite",
   "provider": "XAI" // Optional, Unless the query generator has providers configured for SQL generation LLM
 }
 ```
@@ -56,6 +58,8 @@ Content-Type: application/json
 {
   "query": "How many employees are in the sales department?\n\nContext: The department column contains values like 'Sales', 'Engineering', 'Marketing'.",
   "db_id": "employee_hire_evaluation",
+  "db_type": "sqlite",
+  "db_path": "C:\\Users\\KSPL\\Documents\\Abhinav\\sql-benchmark\\bird_data\\dev_20240627\\dev_databases\\employee_hire_evaluation\\employee_hire_evaluation.sqlite",
   "provider": "XAI" // Optional, Unless the query generator has providers configured for SQL generation LLM
 }
 ```

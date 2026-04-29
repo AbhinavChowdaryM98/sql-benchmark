@@ -93,7 +93,7 @@ HINT_TEMPLATE = (
 
 # ── Agent call ────────────────────────────────────────────────────────────────
 
-def build_payload(question: str, evidence: str, config: dict, db_id: str = None, dataset_loader=None) -> dict:
+def build_payload(question: str, evidence: str, config: dict, db_id: str = None, dataset_loader=None, dev_dir: Path = None) -> dict:
     # Use dataset-specific hint formatting
     if dataset_loader and config["use_hints"] and evidence:
         query_with_hints = dataset_loader.format_hints(question, evidence)
@@ -104,15 +104,25 @@ def build_payload(question: str, evidence: str, config: dict, db_id: str = None,
         "query": query_with_hints,
         "use_qdrant_hints": config.get("use_qdrant_hints", False),
     }
+    
+    # Add database info if available
+    if dataset_loader and db_id and dev_dir:
+        db_path = dataset_loader.get_db_path(dev_dir, db_id)
+        db_type = dataset_loader.get_database_type()
+        payload["db_id"] = db_id
+        payload["db_type"] = db_type
+        payload["db_path"] = str(db_path.absolute())
+    elif db_id:
+        payload["db_id"] = db_id
+    
     if config.get("provider"):
         payload["provider"] = config["provider"]
-    if db_id:
-        payload["db_id"] = db_id
+    
     return payload
 
 
-def call_agent(question: str, evidence: str, config: dict, db_id: str = None, dataset_loader=None) -> dict:
-    payload = json.dumps(build_payload(question, evidence, config, db_id, dataset_loader=dataset_loader)).encode()
+def call_agent(question: str, evidence: str, config: dict, db_id: str = None, dataset_loader=None, dev_dir: Path = None) -> dict:
+    payload = json.dumps(build_payload(question, evidence, config, db_id, dataset_loader=dataset_loader, dev_dir=dev_dir)).encode()
     headers = {"Content-Type": "application/json"}
     if config["agent_api_key"]:
         headers["Authorization"] = f"Bearer {config['agent_api_key']}"
@@ -185,7 +195,7 @@ def run_question(q: dict, dev_dir: Path, config: dict, dataset_loader) -> dict:
     except FileNotFoundError as e:
         return _error_row(qid, db_id, question, evidence, gold_sql, difficulty, str(e), hints_used)
 
-    agent_result = call_agent(question, evidence, config, db_id, dataset_loader)
+    agent_result = call_agent(question, evidence, config, db_id, dataset_loader, dev_dir)
     predicted_sql = agent_result["sql"]
 
     if predicted_sql and not agent_result["agent_error"]:

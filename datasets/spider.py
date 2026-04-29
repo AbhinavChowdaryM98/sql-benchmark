@@ -189,3 +189,37 @@ class SpiderDatasetLoader(DatasetLoader):
             Dataset name
         """
         return "spider"
+    
+    def get_database_type(self) -> str:
+        """
+        Get the database type for Spider.
+        
+        Returns:
+            Database type (always "sqlite" for Spider)
+        """
+        return "sqlite"
+    
+    def get_database_base_path(self, dev_dir: Path) -> Path:
+        """
+        Get the base directory containing all Spider databases.
+        
+        Args:
+            dev_dir: Path to the dataset directory
+            
+        Returns:
+            Base path for databases
+        """
+        # Spider typically stores databases in a 'database' or 'databases' directory
+        db_dirs = [
+            dev_dir / "database",
+            dev_dir / "databases",
+            dev_dir / "spider" / "database",
+            dev_dir / "data" / "database",
+        ]
+        
+        for db_dir in db_dirs:
+            if db_dir.exists():
+                return db_dir
+        
+        # Fallback to dataset root
+        return dev_dir

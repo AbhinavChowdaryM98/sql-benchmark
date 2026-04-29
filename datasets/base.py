@@ -100,9 +100,54 @@ class DatasetLoader(ABC):
         Get the dataset name.
         
         Returns:
-            Dataset name (e.g., "bird", "spider")
+            Dataset name
         """
-        pass
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_database_type(self) -> str:
+        """
+        Get the database type for this dataset.
+        
+        Returns:
+            Database type (e.g., "sqlite", "postgresql", "mysql")
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_database_base_path(self, dev_dir: Path) -> Path:
+        """
+        Get the base directory containing all databases.
+        
+        Args:
+            dev_dir: Path to the dataset directory
+            
+        Returns:
+            Base path for databases
+        """
+        raise NotImplementedError
+
+    def get_database_metadata(self, dev_dir: Path, db_id: str) -> dict:
+        """
+        Get metadata about a specific database.
+        
+        Args:
+            dev_dir: Path to the dataset directory
+            db_id: Database identifier
+            
+        Returns:
+            Dictionary with database metadata including:
+            - type: Database type
+            - path: Full path to database
+            - base_path: Base directory for databases
+            - connection_params: Additional connection parameters if needed
+        """
+        return {
+            "type": self.get_database_type(),
+            "path": str(self.get_db_path(dev_dir, db_id)),
+            "base_path": str(self.get_database_base_path(dev_dir)),
+            "connection_params": {}
+        }
 
 
 def get_dataset_loader(dataset_name: str) -> DatasetLoader:

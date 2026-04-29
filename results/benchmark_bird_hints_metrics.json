@@ -1,63 +1,46 @@
 {
   "overall": {
-    "count": 10,
-    "execution_match_rate": 0.7,
+    "count": 1,
+    "execution_match_rate": 1.0,
     "exact_match_rate": 0.0,
-    "avg_f1": 0.8067,
-    "avg_precision": 0.775,
-    "avg_recall": 0.9,
+    "avg_f1": 1.0,
+    "avg_precision": 1.0,
+    "avg_recall": 1.0,
     "agent_error_rate": 0.0,
     "pred_sql_error_rate": 0.0,
-    "latency_p50_ms": 9850.0,
-    "latency_p95_ms": 21090.0,
-    "latency_p99_ms": 21090.0,
-    "total_input_tokens": 532,
-    "total_output_tokens": 638,
-    "total_cost_usd": 0.0112,
-    "avg_cost_usd_per_question": 0.001117
+    "latency_p50_ms": 26220.0,
+    "latency_p95_ms": 26220.0,
+    "latency_p99_ms": 26220.0,
+    "total_input_tokens": 60,
+    "total_output_tokens": 48,
+    "total_cost_usd": 0.0009,
+    "avg_cost_usd_per_question": 0.0009
   },
   "by_difficulty": {
-    "moderate": {
-      "count": 2,
-      "execution_match_rate": 0.5,
+    "simple": {
+      "count": 1,
+      "execution_match_rate": 1.0,
       "exact_match_rate": 0.0,
-      "avg_f1": 0.7,
-      "avg_precision": 0.625,
+      "avg_f1": 1.0,
+      "avg_precision": 1.0,
       "avg_recall": 1.0,
       "agent_error_rate": 0.0,
       "pred_sql_error_rate": 0.0,
-      "latency_p50_ms": 21090.0,
-      "latency_p95_ms": 21090.0,
-      "latency_p99_ms": 21090.0,
-      "total_input_tokens": 122,
-      "total_output_tokens": 158,
-      "total_cost_usd": 0.0027,
-      "avg_cost_usd_per_question": 0.001368
-    },
-    "simple": {
-      "count": 8,
-      "execution_match_rate": 0.75,
-      "exact_match_rate": 0.0,
-      "avg_f1": 0.8333,
-      "avg_precision": 0.8125,
-      "avg_recall": 0.875,
-      "agent_error_rate": 0.0,
-      "pred_sql_error_rate": 0.0,
-      "latency_p50_ms": 9850.0,
-      "latency_p95_ms": 12780.0,
-      "latency_p99_ms": 12780.0,
-      "total_input_tokens": 410,
-      "total_output_tokens": 480,
-      "total_cost_usd": 0.0084,
-      "avg_cost_usd_per_question": 0.001054
+      "latency_p50_ms": 26220.0,
+      "latency_p95_ms": 26220.0,
+      "latency_p99_ms": 26220.0,
+      "total_input_tokens": 60,
+      "total_output_tokens": 48,
+      "total_cost_usd": 0.0009,
+      "avg_cost_usd_per_question": 0.0009
     }
   },
   "worst_20_dbs": {
     "california_schools": {
-      "count": 10,
-      "execution_match_rate": 0.7,
-      "avg_f1": 0.8067
+      "count": 1,
+      "execution_match_rate": 1.0,
+      "avg_f1": 1.0
     }
   },
-  "total_questions": 10
+  "total_questions": 1
 }

@@ -162,3 +162,30 @@ class BirdDatasetLoader(DatasetLoader):
             Dataset name
         """
         return "bird"
+    
+    def get_database_type(self) -> str:
+        """
+        Get the database type for BIRD.
+        
+        Returns:
+            Database type (always "sqlite" for BIRD)
+        """
+        return "sqlite"
+    
+    def get_database_base_path(self, dev_dir: Path) -> Path:
+        """
+        Get the base directory containing all BIRD databases.
+        
+        Args:
+            dev_dir: Path to the dataset directory
+            
+        Returns:
+            Base path for databases
+        """
+        # BIRD stores databases in dev_databases subdirectory
+        dev_databases_dir = dev_dir / "dev_databases"
+        if dev_databases_dir.exists():
+            return dev_databases_dir
+        
+        # Fallback to dataset root
+        return dev_dir
