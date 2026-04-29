@@ -49,7 +49,8 @@ from pathlib import Path
 import urllib.request
 import urllib.error
 
-from downloader import load_questions, get_db_path, download_bird, DEFAULT_DATA_DIR
+from datasets import get_dataset_loader
+from downloader import DEFAULT_DATA_DIR
 from evaluator import evaluate, clean_sql
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -66,6 +67,7 @@ DEFAULT_CONFIG = {
     "filter_difficulties": [],
     "max_questions": 89,
     "request_timeout": 60,
+    "dataset": os.getenv("DATASET", "bird"),
 }
 
 COST_PER_1M_INPUT = 3.0
@@ -87,26 +89,16 @@ HINT_TEMPLATE = (
 
 # ── Agent call ────────────────────────────────────────────────────────────────
 
-def build_payload(question: str, evidence: str, config: dict, db_id: str = None, use_qdrant_hints: bool = False) -> dict:
-    # Original conversation history approach (commented out due to poor performance)
-    # conversation_history = []
-    # if config["use_hints"] and evidence:
-    #     conversation_history = [
-    #         {
-    #             "role": "assistant",
-    #             "content": HINT_TEMPLATE.format(evidence=evidence),
-    #         }
-    #     ]
-    
-    # New approach: Add hints directly to the query
-    query_with_hints = question
-    if config["use_hints"] and evidence:
-        query_with_hints = f"{question}\n\nContext: {evidence}"
+def build_payload(question: str, evidence: str, config: dict, db_id: str = None, use_qdrant_hints: bool = False, dataset_loader=None) -> dict:
+    # Use dataset-specific hint formatting
+    if dataset_loader and config["use_hints"] and evidence:
+        query_with_hints = dataset_loader.format_hints(question, evidence)
+    else:
+        query_with_hints = question
     
     payload = {
         "query": query_with_hints,
         "use_qdrant_hints": use_qdrant_hints,
-        # "conversation_history": conversation_history,  # Commented out
     }
     if config.get("provider"):
         payload["provider"] = config["provider"]
@@ -115,8 +107,8 @@ def build_payload(question: str, evidence: str, config: dict, db_id: str = None,
     return payload
 
 
-def call_agent(question: str, evidence: str, config: dict, db_id: str = None) -> dict:
-    payload = json.dumps(build_payload(question, evidence, config, db_id)).encode()
+def call_agent(question: str, evidence: str, config: dict, db_id: str = None, dataset_loader=None) -> dict:
+    payload = json.dumps(build_payload(question, evidence, config, db_id, dataset_loader=dataset_loader)).encode()
     headers = {"Content-Type": "application/json"}
     if config["agent_api_key"]:
         headers["Authorization"] = f"Bearer {config['agent_api_key']}"
@@ -175,7 +167,7 @@ def exact_match(gold_sql: str, predicted_sql: str) -> bool:
 
 # ── Per-question worker ───────────────────────────────────────────────────────
 
-def run_question(q: dict, dev_dir: Path, config: dict) -> dict:
+def run_question(q: dict, dev_dir: Path, config: dict, dataset_loader) -> dict:
     qid = q["question_id"]
     db_id = q["db_id"]
     question = q["question"]
@@ -185,11 +177,11 @@ def run_question(q: dict, dev_dir: Path, config: dict) -> dict:
     hints_used = config["use_hints"] and bool(evidence)
 
     try:
-        db_path = str(get_db_path(dev_dir, db_id))
+        db_path = str(dataset_loader.get_db_path(dev_dir, db_id))
     except FileNotFoundError as e:
         return _error_row(qid, db_id, question, evidence, gold_sql, difficulty, str(e), hints_used)
 
-    agent_result = call_agent(question, evidence, config, db_id)
+    agent_result = call_agent(question, evidence, config, db_id, dataset_loader)
     predicted_sql = agent_result["sql"]
 
     if predicted_sql and not agent_result["agent_error"]:
@@ -255,18 +247,27 @@ def _error_row(qid, db_id, question, evidence, gold_sql, difficulty, error_msg, 
 
 def run_benchmark(config: dict = DEFAULT_CONFIG):
     data_dir = Path(config["data_dir"])
-    dev_dir = download_bird(data_dir)
-    questions = load_questions(dev_dir)
+    dataset_loader = get_dataset_loader(config["dataset"])
+    dev_dir = dataset_loader.download(data_dir)
+    questions = dataset_loader.load_questions(dev_dir)
 
     if config.get("filter_db_ids"):
         questions = [q for q in questions if q["db_id"] in config["filter_db_ids"]]
     if config.get("filter_difficulties"):
+        valid_difficulties = dataset_loader.get_difficulty_levels()
+        requested_difficulties = config["filter_difficulties"]
+        # Validate difficulty levels
+        invalid_difficulties = [d for d in requested_difficulties if d not in valid_difficulties]
+        if invalid_difficulties:
+            print(f"[runner] Warning: Invalid difficulty levels for {dataset_loader.get_name()}: {invalid_difficulties}")
+            print(f"[runner] Valid levels: {valid_difficulties}")
         questions = [q for q in questions if q["difficulty"] in config["filter_difficulties"]]
     max_questions = config.get("max_questions")
     if max_questions is not None and max_questions != -1:
         questions = questions[: max_questions]
 
     hint_label = "WITH hints" if config["use_hints"] else "WITHOUT hints"
+    print(f"[runner] Dataset: {dataset_loader.get_name()}")
     print(f"[runner] Running {len(questions)} questions {hint_label} | workers={config['workers']}")
     print(f"[runner] Agent: {config['agent_url']}")
 
@@ -281,7 +282,7 @@ def run_benchmark(config: dict = DEFAULT_CONFIG):
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=config["workers"]) as executor:
             futures = {
-                executor.submit(run_question, q, dev_dir, config): q
+                executor.submit(run_question, q, dev_dir, config, dataset_loader): q
                 for q in questions
             }
             for future in concurrent.futures.as_completed(futures):

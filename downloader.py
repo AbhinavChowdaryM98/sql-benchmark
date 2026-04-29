@@ -2,6 +2,12 @@
 Download and prepare BIRD-Bench dev set.
 Source: https://huggingface.co/datasets/birdbench/bird
 Falls back to local path if already downloaded.
+
+DEPRECATED: This module is deprecated. Use the datasets module instead:
+    from datasets import BirdDatasetLoader
+    loader = BirdDatasetLoader()
+    dev_dir = loader.download(data_dir)
+    questions = loader.load_questions(dev_dir)
 """
 import json
 import os
@@ -102,6 +108,8 @@ def get_db_path(dev_dir: Path, db_id: str) -> Path:
 
 
 if __name__ == "__main__":
+    print("[downloader] DEPRECATED: Use the datasets module instead.")
+    print("[downloader] Example: from datasets import BirdDatasetLoader")
     dev_dir = download_bird()
     questions = load_questions(dev_dir)
     print(f"Sample: {questions[0]}")

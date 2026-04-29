@@ -1,6 +1,6 @@
-# BIRD-Bench NL→SQL Benchmark Harness
+# SQL Benchmark Harness
 
-Benchmarks your LangGraph-based NL→SQL agent against the BIRD-Bench dev set (12k questions, 95 DBs).
+Modular benchmarking framework for NL→SQL agents across multiple datasets (BIRD, Spider, etc.).
 
 ## Metrics
 
@@ -72,29 +72,60 @@ Response:
 ## Running
 
 ```bash
-# Full benchmark (all 12k questions)
-AGENT_URL=http://localhost:4747/sql-query python runner.py
+# Run BIRD benchmark (default)
+python main.py run --dataset bird
+
+# Run Spider benchmark
+python main.py run --dataset spider
+
+# With custom agent URL
+python main.py run --agent-url http://localhost:4747/sql-query
 
 # With more concurrency
-AGENT_URL=http://localhost:4747/sql-query WORKERS=8 python runner.py
+python main.py run --workers 8
 
 # With hints enabled (default)
-USE_HINTS=true python runner.py
+python main.py run --hints
 
 # Without hints
-USE_HINTS=false python runner.py
+python main.py run
+
+# Compare hints vs no-hints
+python main.py run --compare
 
 # Limited questions
-MAX_QUESTIONS=100 python runner.py
+python main.py run --max-questions 100
 
-# Smoke test — 100 questions, simple only
-python runner.py --max-questions 100 --difficulties simple
+# Filter by difficulty (dataset-specific)
+python main.py run --difficulties simple moderate
 
 # Specific DBs
-python runner.py --dbs california_schools debit_card_specialties
+python main.py run --dbs california_schools debit_card_specialties
+
+# Custom output path
+python main.py run --output ./results/my_benchmark
 
 # Recompute metrics from existing results CSV
-python metrics.py --csv ./results/benchmark_results.csv
+python main.py metrics --csv ./results/benchmark_bird_no_hints.csv
+
+# Compare two existing runs
+python main.py compare --no-hints-csv ./results/benchmark_bird_no_hints.csv --hints-csv ./results/benchmark_bird_hints.csv
+```
+
+### Environment Variables
+
+```bash
+# Set dataset via environment variable
+DATASET=spider python main.py run
+
+# Set agent URL
+AGENT_URL=http://localhost:4747/sql-query python main.py run
+
+# Set workers
+WORKERS=8 python main.py run
+
+# Enable/disable hints
+USE_HINTS=false python main.py run
 ```
 
 ---
@@ -103,15 +134,17 @@ python metrics.py --csv ./results/benchmark_results.csv
 
 ```
 results/
-  benchmark_results.csv   # one row per question, all metrics
-  metrics.json            # aggregated stats
+  benchmark_bird_no_hints.csv      # per-question results for BIRD
+  benchmark_bird_hints.csv         # per-question results for BIRD with hints
+  benchmark_spider_no_hints.csv    # per-question results for Spider
+  benchmark_bird_no_hints_metrics.json  # aggregated stats
 ```
 
 ### Console summary
 
 ```
 ============================================================
-BIRD-BENCH BENCHMARK REPORT
+SQL BENCHMARK REPORT - BIRD
 ============================================================
 
 OVERALL
@@ -141,12 +174,13 @@ All config via env vars or CLI args:
 
 | Env var | Default | Description |
 |---|---|---|
+| `DATASET` | `bird` | Dataset to benchmark (bird, spider) |
 | `AGENT_URL` | `http://localhost:4747/sql-query` | Agent endpoint |
 | `AGENT_API_KEY` | `` | Bearer token (optional) |
 | `AGENT_PROVIDER` | `XAI` | Model provider |
 | `WORKERS` | `4` | Concurrent requests |
 | `OUTPUT_CSV` | `./results/benchmark_results.csv` | Results output |
-| `BIRD_DATA_DIR` | `./bird_data` | Where to download BIRD DBs |
+| `BIRD_DATA_DIR` | `./bird_data` | Where to download dataset DBs |
 | `USE_HINTS` | `true` | Include evidence hints in queries |
 | `MAX_QUESTIONS` | `-1` | Limit number of questions (-1 = all) |
 
@@ -167,12 +201,97 @@ COST_PER_1M_OUTPUT = 15.0
 
 ---
 
-## BIRD-Bench Dataset
+## Supported Datasets
+
+### BIRD-Bench
 
 Downloaded automatically from the official BIRD repository on first run (~33.4GB).
 Source: https://bird-bench.oss-cn-beijing.aliyuncs.com/dev.zip
 
+- **Questions**: 12,751 across 95 databases
+- **Difficulty levels**: simple, moderate, challenging
+- **Evidence**: Includes domain hints in the `evidence` field
+
+### Spider 2.0
+
+Placeholder implementation for Spider 2.0. Update the URL and data structure in `datasets/spider.py` when the official Spider 2.0 dataset is available.
+
+- **Questions**: TBD
+- **Difficulty levels**: easy, medium, hard, extra hard
+- **Evidence**: May not include evidence field
+
+---
+
+## Adding New Datasets
+
+To add support for a new dataset:
+
+1. Create a new file in `datasets/` (e.g., `datasets/wikisql.py`)
+2. Inherit from `DatasetLoader` base class
+3. Implement the required methods:
+   - `download(data_dir, force)` - Download/extract dataset
+   - `load_questions(dev_dir)` - Load questions with metadata
+   - `get_db_path(dev_dir, db_id)` - Resolve database paths
+   - `format_hints(question, evidence)` - Format hints for agent
+   - `get_difficulty_levels()` - Return valid difficulty levels
+   - `get_name()` - Return dataset name
+4. Add to `get_dataset_loader()` factory in `datasets/base.py`
+5. Add to choices in `main.py` argument parser
+
+Example:
+```python
+# datasets/wikisql.py
+from .base import DatasetLoader
+from pathlib import Path
+from typing import List, Dict
+
+class WikiSQLDatasetLoader(DatasetLoader):
+    def download(self, data_dir: Path, force: bool = False) -> Path:
+        # Download and extract WikiSQL dataset
+        pass
+    
+    def load_questions(self, dev_dir: Path) -> List[Dict]:
+        # Load WikiSQL questions
+        pass
+    
+    def get_db_path(self, dev_dir: Path, db_id: str) -> Path:
+        # Resolve database path
+        pass
+    
+    def format_hints(self, question: str, evidence: str) -> str:
+        # Format hints
+        pass
+    
+    def get_difficulty_levels(self) -> List[str]:
+        return ["easy", "hard"]
+    
+    def get_name(self) -> str:
+        return "wikisql"
+```
+
+---
+
+## BIRD-Bench Dataset Details
+
 Each question includes `difficulty` (simple/moderate/challenging) and an optional `evidence` field (domain hints). When `USE_HINTS=true`, the evidence is included directly in the query text for better context.
+
+## Architecture
+
+```
+sql-benchmark/
+├── datasets/              # Dataset loaders
+│   ├── __init__.py       # Module exports
+│   ├── base.py           # Abstract DatasetLoader interface
+│   ├── bird.py           # BIRD-Bench implementation
+│   └── spider.py         # Spider 2.0 implementation
+├── runner.py              # Benchmark runner (dataset-agnostic)
+├── evaluator.py           # SQL execution evaluation
+├── metrics.py             # Metrics computation
+├── main.py                # CLI entry point
+└── downloader.py          # Deprecated (use datasets module)
+```
+
+---
 
 ### Database Integration
 
@@ -192,4 +311,3 @@ setup_sqlite_connector_env("california_schools")
 import os
 connector = YourSQLiteConnector()  # Your custom connector
 # os.environ["SQLITE_DB_PATH"] is set to the correct database path
-```

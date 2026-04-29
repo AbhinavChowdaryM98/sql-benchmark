@@ -23,6 +23,7 @@ from pathlib import Path
 
 from runner import run_benchmark, DEFAULT_CONFIG
 from metrics import compute_metrics, print_report, save_metrics_json
+from datasets import get_dataset_loader
 
 
 def _build_config(args, use_hints: bool, output_suffix: str) -> dict:
@@ -39,11 +40,14 @@ def _build_config(args, use_hints: bool, output_suffix: str) -> dict:
         config["filter_db_ids"] = args.dbs
     if getattr(args, "data_dir", None):
         config["data_dir"] = Path(args.data_dir)
+    if getattr(args, "dataset", None):
+        config["dataset"] = args.dataset
 
     config["use_hints"] = use_hints
     base = getattr(args, "output", None) or "./results/benchmark"
     base = base.rstrip(".csv")
-    config["output_csv"] = f"{base}_{output_suffix}.csv"
+    dataset_name = config.get("dataset", "bird")
+    config["output_csv"] = f"{base}_{dataset_name}_{output_suffix}.csv"
     return config
 
 
@@ -130,7 +134,11 @@ def print_comparison(m_no: dict, m_yes: dict):
     print("\nBY DIFFICULTY")
     print(f"  {'Tier':<12} {'No hints exec':>14} {'Hints exec':>12} {'Delta':>8}")
     print("  " + "-" * 50)
-    for diff in ["simple", "moderate", "challenging"]:
+    # Get all unique difficulty levels from both metrics
+    all_difficulties = set()
+    all_difficulties.update(m_no["by_difficulty"].keys())
+    all_difficulties.update(m_yes["by_difficulty"].keys())
+    for diff in sorted(all_difficulties):
         no = m_no["by_difficulty"].get(diff, {}).get("execution_match_rate", 0)
         yes = m_yes["by_difficulty"].get(diff, {}).get("execution_match_rate", 0)
         d = yes - no
@@ -139,7 +147,7 @@ def print_comparison(m_no: dict, m_yes: dict):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="BIRD-Bench NL→SQL harness")
+    parser = argparse.ArgumentParser(description="SQL benchmark harness for multiple datasets (BIRD, Spider, etc.)")
     sub = parser.add_subparsers(dest="command")
 
     # Shared args
@@ -147,7 +155,8 @@ def main():
         p.add_argument("--agent-url")
         p.add_argument("--workers", type=int)
         p.add_argument("--max-questions", type=int)
-        p.add_argument("--difficulties", nargs="+", choices=["simple", "moderate", "challenging"])
+        p.add_argument("--dataset", choices=["bird", "spider"], default="bird", help="Dataset to benchmark (default: bird)")
+        p.add_argument("--difficulties", nargs="+", help="Difficulty levels to filter (dataset-specific)")
         p.add_argument("--dbs", nargs="+")
         p.add_argument("--output", help="Base path for output CSVs (suffix _no_hints/_hints added)")
         p.add_argument("--data-dir")
